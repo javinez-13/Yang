@@ -1,0 +1,76 @@
+import { query } from '../config/database';
+import { CreateUserInput, PublicUser, User } from '../types/user';
+
+const mapRowToUser = (row: {
+  id: string;
+  full_name: string;
+  email: string;
+  password_hash: string;
+  address: string | null;
+  contact_number: string | null;
+  age: number | null;
+  created_at: Date;
+}): User => ({
+  id: row.id,
+  fullName: row.full_name,
+  email: row.email,
+  passwordHash: row.password_hash,
+  address: row.address,
+  contactNumber: row.contact_number,
+  age: row.age,
+  createdAt: row.created_at,
+});
+
+export class UserRepository {
+  async createUser(payload: CreateUserInput & { passwordHash: string }): Promise<User> {
+    const result = await query(
+      `INSERT INTO users (full_name, email, password_hash, address, contact_number, age)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        payload.fullName,
+        payload.email.toLowerCase(),
+        payload.passwordHash,
+        payload.address ?? null,
+        payload.contactNumber ?? null,
+        payload.age ?? null,
+      ],
+    );
+
+    return mapRowToUser(result.rows[0]);
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const result = await query('SELECT * FROM users WHERE email = $1 LIMIT 1', [email.toLowerCase()]);
+    return result.rows[0] ? mapRowToUser(result.rows[0]) : null;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const result = await query('SELECT * FROM users WHERE id = $1 LIMIT 1', [id]);
+    return result.rows[0] ? mapRowToUser(result.rows[0]) : null;
+  }
+
+  async updateProfile(
+    id: string,
+    data: Partial<Pick<CreateUserInput, 'fullName' | 'address' | 'contactNumber' | 'age'>>,
+  ): Promise<PublicUser | null> {
+    const result = await query(
+      `UPDATE users
+       SET full_name = COALESCE($2, full_name),
+           address = COALESCE($3, address),
+           contact_number = COALESCE($4, contact_number),
+           age = COALESCE($5, age)
+       WHERE id = $1
+       RETURNING *`,
+      [id, data.fullName ?? null, data.address ?? null, data.contactNumber ?? null, data.age ?? null],
+    );
+
+    return result.rows[0] ? this.toPublic(mapRowToUser(result.rows[0])) : null;
+  }
+
+  toPublic(user: User): PublicUser {
+    const { passwordHash, ...publicUser } = user;
+    return publicUser;
+  }
+}
+

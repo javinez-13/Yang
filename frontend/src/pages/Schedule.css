@@ -1,0 +1,502 @@
+/* ===============================
+   SCHEDULE PAGE - COMPLETE STYLES
+   =============================== */
+
+/* --- 1. Overall Page Container & Background --- */
+.schedule-page-container {
+    background: #f7f3f5;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+}
+
+/* --- 2. Header Styles (Reused/Adapted) --- */
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    background-color: #ffffff;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon-container {
+    background: #ffffff;
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo-icon {
+    font-size: 1.5rem;
+    color: #4a4a4a;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.logo-main-text { color: #3b304f; }
+.logo-sub-text { font-size: 0.8rem; font-weight: 400; color: #666; }
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-title .title-icon { font-size: 2.8rem; color: #3b304f; }
+
+.schedule-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #3b304f;
+    letter-spacing: -0.5px;
+    margin: 0;
+}
+
+.home-btn {
+    font-size: 1.5rem;
+    background: #3b304f;
+    padding: 10px 15px;
+    border-radius: 15px;
+    text-decoration: none;
+    line-height: 1;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    color: #ffffff;
+    transition: background 0.3s;
+}
+
+.home-btn:hover { background: #5c4b75; }
+
+/* --- 3. Main Content Layout --- */
+.schedule-main-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 2rem;
+    align-items: flex-start;
+}
+
+/* --- 4. Card Styling (General) --- */
+.booking-card, .calendar-card, .time-slots-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+}
+
+/* --- 5. Booking Card (Left Column) --- */
+.booking-card {
+    background: linear-gradient(135deg, #f0e6fa 0%, #dbceff 100%);
+    color: #3b304f;
+}
+
+.booking-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 2rem;
+    text-align: left;
+    color: #3b304f;
+}
+
+.service-type-section .section-label {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-align: left;
+    color: #5f5365;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #3b304f;
+    background: rgba(255, 255, 255, 0.6);
+    padding: 0.8rem 1.2rem;
+    border-radius: 10px;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.radio-label:hover {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.radio-label input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.radio-custom {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #5f5365;
+    margin-right: 15px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.radio-custom::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #5f5365;
+    transition: transform 0.2s ease;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom {
+    border-color: #6a6cff;
+    background: #6a6cff;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom::after {
+    transform: translate(-50%, -50%) scale(1);
+    background: #ffffff;
+}
+
+/* --- 6. Calendar (Middle Column) --- */
+.calendar-card {
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #3b304f;
+}
+
+.calendar-nav button {
+    background: none;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    font-size: 1.2rem;
+    color: #555;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-nav button:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    font-size: 0.95rem;
+}
+
+.calendar-weekday-header {
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    padding-bottom: 0.5rem;
+}
+
+.calendar-day {
+    padding: 1rem 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    min-height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 500;
+}
+
+.calendar-day:hover:not(.empty):not(.selected) {
+    background: #f0f0f0;
+}
+
+.calendar-day.empty {
+    background: transparent;
+    cursor: default;
+}
+
+.calendar-day.selected {
+    background: #6a6cff;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.calendar-day.today {
+    border: 2px solid #6a6cff;
+    color: #6a6cff;
+    font-weight: 700;
+    background-color: #eef2ff;
+}
+
+.calendar-day.available-blue { background-color: #d8e5ff; color: #3b304f; font-weight: 700; }
+.calendar-day.available-green { background-color: #a8ffb1; color: #3b304f; font-weight: 700; }
+
+
+/* --- 7. Time Slots Card (Right Column) --- */
+.time-slots-card {
+    text-align: center;
+    position: relative; /* Needed for positioning the overlays relative to this card */
+}
+
+.time-slots-card h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    text-align: left;
+    color: #3b304f;
+}
+
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+}
+
+/* Wrapper for each time slot button, crucial for relative positioning of the overlay */
+.time-slot-wrapper {
+    position: relative;
+    /* This makes sure the parent button and its overlay are grouped */
+    display: inline-block; /* Allows positioning overlays right next to the button */
+    width: 100%; /* Take full grid cell width */
+}
+
+.time-slot-btn {
+    background: #dbceff;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #3b304f;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    width: 100%; /* Ensure button fills its wrapper */
+}
+
+.time-slot-btn:hover:not(.selected) {
+    transform: translateY(-3px);
+    background: #c3b1e7;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.time-slot-btn.selected {
+    background: #6a6cff;
+    color: #ffffff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    transform: scale(1.02);
+}
+
+/* --- Time Slot Overlay Styles --- */
+.time-slot-overlay {
+    position: absolute;
+    /* Position the overlay right next to the hovered button */
+    top: 0; /* Align with the top of the button */
+    left: calc(100% + 10px); /* 10px gap from the button */
+    
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 0.5rem;
+    z-index: 10; /* Ensure it appears above other elements */
+    min-width: 120px;
+    max-height: 200px; /* Limit height for scroll if many slots */
+    overflow-y: auto; /* Enable scrolling for many slots */
+
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.minute-slot-btn {
+    background: none; /* No background by default */
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.2s ease, color 0.2s ease;
+    width: 100%; /* Ensure minute buttons fill overlay width */
+}
+
+.minute-slot-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.minute-slot-btn.selected {
+    background: #6ac4ff; /* A lighter blue/cyan for minute slot selection */
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Close button for overlay (if needed, currently hidden) */
+/* .overlay-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #999;
+}
+.overlay-close-btn:hover {
+    color: #555;
+} */
+
+
+.confirm-booking-btn {
+    background: linear-gradient(135deg, #6cbe8a 0%, #a8ffb1 100%);
+    border: none;
+    border-radius: 15px;
+    padding: 1.2rem 1.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #3b304f;
+    cursor: pointer;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.confirm-booking-btn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.12);
+}
+
+.confirm-booking-btn:disabled {
+    background: #e0e0e0;
+    color: #999;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+
+/* --- 8. Footer Styles (Reused/Adapted) --- */
+.schedule-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 3rem auto 0 auto;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.footer-left, .footer-right, .footer-middle {
+    display: flex;
+    align-items: center;
+}
+
+.footer-left { color: #66bb6a; font-weight: 500; }
+
+.phone-icon {
+    font-size: 2rem;
+    margin-right: 10px;
+    background: #66bb6a;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.footer-middle .social-icon {
+    font-size: 1.5rem;
+    margin: 0 10px;
+    cursor: pointer;
+}
+
+.footer-middle .social-icon:nth-child(1) { color: #3b5998; }
+.footer-middle .social-icon:nth-child(2) { color: #e1306c; }
+.footer-middle .social-icon:nth-child(3) { color: #000000; }
+
+.footer-right .mail-icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+    color: #3b304f;
+}
+
+/* --- 9. Responsive Adjustments --- */
+@media (max-width: 992px) {
+    .schedule-main-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    .schedule-header, .schedule-footer {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    .footer-left, .footer-middle, .footer-right {
+        justify-content: center;
+    }
+    /* Adjust overlay position for smaller screens if needed */
+    .time-slot-overlay {
+        left: 50%; /* Center under the button */
+        transform: translateX(-50%);
+        top: calc(100% + 10px); /* Position below the button */
+        width: 90%; /* Take up more width */
+    }
+}
+
+@media (max-width: 576px) {
+    .time-slots-card {
+        padding: 1.5rem;
+    }
+    .time-slots-grid {
+        grid-template-columns: 1fr; /* Stack time slots vertically */
+    }
+    .confirm-booking-btn {
+        font-size: 1.1rem;
+        padding: 1rem;
+    }
+}

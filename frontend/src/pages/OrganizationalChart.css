@@ -1,0 +1,266 @@
+/* =======================================
+   ORGANIZATIONAL CHART PAGE - FINAL STYLES
+   ======================================= */
+
+/* --- 1. Overall Container & Background --- */
+
+.org-chart-page {
+  /* Mimics the soft, light pinkish-grey page background from the image */
+  background: #f7f3f5; 
+  min-height: 100vh;
+  padding: 3rem 0; 
+}
+
+.org-chart-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  text-align: center;
+}
+
+/* --- 2. Header and Branding --- */
+
+.org-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    margin-bottom: 2.5rem;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon-container {
+    background: #ffffff; /* White background for the icon */
+    border-radius: 50%;
+    padding: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logo-icon {
+    font-size: 1.5rem;
+    color: #4a4a4a;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.1;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.logo-sub-text {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #666;
+}
+
+.org-chart-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #3b304f; /* Darker purple color from the image */
+  letter-spacing: -0.5px;
+}
+
+.home-btn {
+    font-size: 1.5rem;
+    background: #a6a5a9;
+    padding: 10px 15px;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: background 0.3s;
+    line-height: 1; /* Ensure emoji sits nicely */
+    box-shadow: 0 5px 15px rgba(246, 240, 240, 0.1);
+}
+
+.home-btn:hover {
+    background: #5c4b75;
+}
+
+/* --- 3. Main Chart Wrapper (The 'White' Box) --- */
+
+.org-chart-wrapper {
+  background: #ffffff;
+  border-radius: 30px;
+  padding: 4rem 2rem;
+  /* Stronger, but softer shadow like the image's container */
+  box-shadow: 0 40px 70px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.05); 
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.org-chart-scroll {
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+/* --- 4. Node Styling (The Gradient Boxes) --- */
+
+.org-chart-node {
+  /* Soft green/blue/pink gradient */
+  background: linear-gradient(135deg, #a8ffb1 0%, #b2f8e1 50%, #d8e5ff 100%);
+  
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  margin: 0 1rem;
+  min-width: 180px; /* Ensures the text doesn't wrap unnecessarily */
+  color: #2f2a33;
+  font-weight: 600;
+  cursor: pointer;
+  
+  /* Subtle inner and soft external shadow */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(255, 255, 255, 0.4);
+  transition: transform 0.3s ease;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.org-chart-node:hover {
+  transform: translateY(-5px);
+}
+
+.node-icon {
+  font-size: 2.5rem;
+  color: #3b5071;
+  margin-bottom: 0.5rem;
+}
+
+.node-title {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.top-node {
+    /* Slightly different gradient for the root node */
+    background: linear-gradient(135deg, #7ad2a8 0%, #a8ffb1 100%); 
+}
+
+/* --- 5. Chart Layout and Connector Lines --- */
+.chart-level-1 {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 30px; 
+    position: relative;
+}
+
+/* Vertical line from Hospital Director down to the next level's line */
+.chart-level-1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 30px; 
+    width: 2px;
+    background-color: #cacaca;
+}
+
+/* Container for sibling rows, establishes the connection point */
+.chart-node-group {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    width: 100%; /* Important for centering the groups */
+}
+
+/* This is the container that holds the horizontal line and the sibling nodes */
+.chart-sibling-connect {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 30px;
+    padding-top: 30px; 
+    position: relative;
+}
+
+/* Horizontal line connecting siblings */
+.chart-sibling-connect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px; 
+    background-color: #cacaca;
+}
+
+/* Special logic for Level 3: Department Heads
+   This group needs to be positioned only under the 'Chief of Administration' 
+   (the middle node of the row above). 
+*/
+.node-group-vertical-align {
+    /* Limit the width of the group to align its centerline under the parent node */
+    width: calc(100% / 3); 
+    margin: 0 auto; /* Center this reduced-width group */
+    position: relative;
+}
+
+/* Vertical line connecting 'Chief of Administration' down to the last row */
+.node-group-vertical-align::before {
+    content: '';
+    position: absolute;
+    top: -30px; /* Aligns to the bottom of the parent node's vertical line */
+    left: 50%;
+    transform: translateX(-50%);
+    height: 30px; 
+    width: 2px;
+    background-color: #cacaca;
+}
+
+/* --- 6. Footer Styles --- */
+.org-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 3rem auto 0 auto;
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.footer-left, .footer-right, .footer-middle {
+    display: flex;
+    align-items: center;
+}
+
+.footer-left {
+    color: #66bb6a; /* Green color for the phone icon/text */
+    font-weight: 500;
+}
+
+.phone-icon {
+    font-size: 2rem;
+    margin-right: 10px;
+    background: #66bb6a;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 50%;
+}
+
+.footer-middle .social-icon {
+    font-size: 1.5rem;
+    margin: 0 10px;
+    cursor: pointer;
+}
+
+.footer-middle .social-icon:nth-child(1) { color: #3b5998; } /* Facebook */
+.footer-middle .social-icon:nth-child(2) { color: #e1306c; } /* Instagram */
+.footer-middle .social-icon:nth-child(3) { color: #000000; } /* X/Twitter */
+
+
+.footer-right .mail-icon {
+    font-size: 1.5rem;
+    margin-right: 10px;
+    color: #3b304f;
+}
