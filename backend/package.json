@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc -p .",
     "start": "node dist/server.js",
-    "db:init": "ts-node scripts/initDb.ts"
+    "db:init": "ts-node src/scripts/createMissingTables.ts"
   },
   "keywords": [],
   "author": "",

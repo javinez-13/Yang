@@ -10,7 +10,7 @@ const AuthLayout = ({ children, helperText, helperLink, primaryCta }) => {
           <div style={{ fontSize: '0.9rem', color: '#5d5366' }}>Health Portal</div>
         </div>
         {primaryCta ?? (
-          <Link to="/dashboard" className="primary-btn" style={{ textDecoration: 'none', maxWidth: '120px', textAlign: 'center' }}>
+          <Link to="/admin/login" className="primary-btn" style={{ textDecoration: 'none', maxWidth: '120px', textAlign: 'center' }}>
             Admin
           </Link>
         )}

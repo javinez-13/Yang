@@ -6,6 +6,7 @@ export type AuthTokenPayload = {
   sub: string;
   email: string;
   fullName: string;
+  role?: string;
 };
 
 export const signAuthToken = (user: PublicUser) =>
@@ -13,6 +14,7 @@ export const signAuthToken = (user: PublicUser) =>
     {
       email: user.email,
       fullName: user.fullName,
+      role: user.role,
     },
     env.jwtSecret,
     {

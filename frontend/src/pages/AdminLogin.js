@@ -3,25 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.js';
 import useAuth from '../hooks/useAuth.js';
 
-const LoginPage = () => {
+const AdminLogin = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', agree: true });
+  const [form, setForm] = useState({ email: 'admin@yangconnect.com', password: 'admin1234', agree: true });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.agree) {
-      setError('Please agree to the Terms of Service to continue.');
-      return;
-    }
     try {
       setError(null);
       setSubmitting(true);
       await login({ email: form.email, password: form.password });
-      navigate('/dashboard');
+      // attempt to go to admin dashboard; AdminRoute will redirect if not admin
+      navigate('/admin');
     } catch (err) {
+      // Try to extract a helpful message from axios/server error
       const message = err?.response?.data?.message || err?.message || 'Unable to log in';
       setError(message);
     } finally {
@@ -30,17 +28,17 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthLayout helperText="Do not have an account?" helperLink={{ label: 'Sign up', to: '/signup' }}>
+    <AuthLayout helperText="Back to user login" helperLink={{ label: 'User Login', to: '/login' }}>
       <div>
-        <h2 style={{ margin: '0 0 0.35rem' }}>Already have an Account?</h2>
-        <p style={{ margin: 0, color: '#5f5365' }}>Sign in to access the YangConnect health portal.</p>
+        <h2 style={{ margin: '0 0 0.35rem' }}>Admin Sign In</h2>
+        <p style={{ margin: 0, color: '#5f5365' }}>Sign in with your admin account to manage the portal.</p>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <label>
           <input
             className="input-field"
-            placeholder="Email Address"
+            placeholder="Admin Email"
             type="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
@@ -57,26 +55,20 @@ const LoginPage = () => {
             required
           />
         </label>
-        <label className="checkbox-row">
-          <input type="checkbox" checked={form.agree} onChange={(e) => setForm((prev) => ({ ...prev, agree: e.target.checked }))} />
-          <span>I agree the Terms of Service and Privacy Policy</span>
-        </label>
         {error && (
-          <div style={{ color: '#c0392b', fontWeight: 600 }}>
-            {error}
-          </div>
+          <div style={{ color: '#c0392b', fontWeight: 600 }}>{error}</div>
         )}
         <div className="dual-actions">
           <button type="submit" className="primary-btn" disabled={submitting} style={{ flex: 1 }}>
-            {submitting ? 'Signing in…' : 'Log In'}
+            {submitting ? 'Signing in…' : 'Admin Log In'}
           </button>
-          <button type="button" className="secondary-btn" style={{ flex: 1 }} onClick={() => navigate('/signup')}>
-            Sign Up
-          </button>
+        </div>
+        <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
+          Tip: Use email <strong>admin@yangconnect.com</strong> and password <strong>admin1234</strong> for the seeded admin account.
         </div>
       </form>
     </AuthLayout>
   );
 };
 
-export default LoginPage;
+export default AdminLogin;

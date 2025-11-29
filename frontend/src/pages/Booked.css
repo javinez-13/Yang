@@ -1,0 +1,41 @@
+/* Styles for the Booked page - simple, responsive layout matching the provided mockup */
+.booked-page {
+  background: #fdeff1; /* pale pink background */
+  min-height: calc(100vh - 40px);
+}
+
+.booked-page header h1 {
+  letter-spacing: 2px;
+}
+
+.booked-page main {
+  margin-top: 18px;
+}
+
+.booked-page aside {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.booked-page section {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.booked-page .booked-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.booked-page .service-pill {
+  background: #ffdfe6;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .booked-page main {
+    display: block;
+  }
+  .booked-page main > * { margin-bottom: 12px; }
+}

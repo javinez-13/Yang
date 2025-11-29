@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaHospitalUser, FaCalendarCheck, FaPhoneAlt, FaFacebook, FaInstagram,
   FaEnvelope, FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { http } from '../api/http.js';
+import useAuth from '../hooks/useAuth.js';
 import "./Schedule.css";
 
 // --- Helper: Calendar Component (No change needed from previous version) ---
@@ -124,6 +126,41 @@ export default function Schedule() {
 
   // NEW state for managing the overlay visibility
   const [hoveredTimeSlot, setHoveredTimeSlot] = useState(null);
+  
+  // State for provider schedules
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
+
+  useEffect(() => {
+    const loadSchedules = async () => {
+      try {
+        const { data } = await http.get('/schedules');
+        setSchedules(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error loading schedules:', err);
+        setSchedules([]);
+      } finally {
+        setLoadingSchedules(false);
+      }
+    };
+    loadSchedules();
+  }, []);
+
+  // Get available dates based on provider schedules
+  const getAvailableDates = () => {
+    if (!selectedCalendarDate) return {};
+    const dayOfWeek = selectedCalendarDate.getDay();
+    const availableDates = {};
+    
+    schedules.forEach(schedule => {
+      if (schedule.day_of_week === dayOfWeek) {
+        const dateKey = `${selectedCalendarDate.getMonth()}-${selectedCalendarDate.getDate()}`;
+        availableDates[dateKey] = 'available-blue';
+      }
+    });
+    
+    return availableDates;
+  };
 
 
   const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -155,10 +192,57 @@ export default function Schedule() {
     setHoveredTimeSlot(null); // Clear overlay
   };
 
-  const handleBookingConfirm = () => {
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+
+  // Helper function to convert 12-hour time to 24-hour format
+  const convertTo24Hour = (time12h) => {
+    const [time, period] = time12h.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
+    
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+  };
+
+  const handleBookingConfirm = async () => {
     const finalTime = selectedExactTime || selectedTimeSlot; // Use exact time if selected, else main slot
     if (selectedService && selectedCalendarDate && finalTime) {
-      alert(`Booking confirmed for:\nService: ${selectedService}\nDate: ${selectedCalendarDate.toDateString()}\nTime: ${finalTime}`);
+      if (!user) {
+        alert("Please log in to book an appointment.");
+        return;
+      }
+
+      setSaving(true);
+      try {
+        // Convert time to 24-hour format if needed
+        const time24 = convertTo24Hour(finalTime);
+        const dateStr = selectedCalendarDate.toISOString().split('T')[0];
+
+        // Save appointment to backend
+        const { data } = await http.post('/appointments', {
+          service_type: selectedService,
+          appointment_date: dateStr,
+          appointment_time: time24,
+          notes: `Booked via schedule page`
+        });
+
+        // Navigate to booked page with the saved appointment
+        navigate('/booked', { state: { 
+          service: selectedService,
+          dateIso: selectedCalendarDate.toISOString(),
+          time: finalTime,
+          id: data.id,
+          status: data.status
+        }});
+      } catch (err) {
+        alert('Error booking appointment: ' + (err.response?.data?.message || err.message));
+        setSaving(false);
+      }
     } else {
       alert("Please select a service, date, and time slot to confirm your booking.");
     }
@@ -279,9 +363,9 @@ export default function Schedule() {
           <button 
             className="confirm-booking-btn"
             onClick={handleBookingConfirm}
-            disabled={!selectedService || !selectedCalendarDate || (!selectedTimeSlot && !selectedExactTime)}
+            disabled={!selectedService || !selectedCalendarDate || (!selectedTimeSlot && !selectedExactTime) || saving}
           >
-            Confirm Booking
+            {saving ? 'Saving...' : 'Confirm Booking'}
           </button>
         </div>
       </main>

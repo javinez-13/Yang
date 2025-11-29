@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FaUserMd,
   FaUserNurse,
@@ -13,6 +13,7 @@ import {
   FaHeartbeat
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { http } from '../api/http.js';
 import "./OrganizationalChart.css";
 
 // --- Reusable Node Component ---
@@ -24,7 +25,132 @@ const ChartNode = ({ title, icon: Icon, className = "" }) => (
   </div>
 );
 
+// Icon mapping for different roles
+const getIconForRole = (name) => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('director') || lowerName.includes('executive')) return FaHospitalUser;
+  if (lowerName.includes('medicine') || lowerName.includes('doctor')) return FaUserMd;
+  if (lowerName.includes('administration') || lowerName.includes('admin')) return FaUserTie;
+  if (lowerName.includes('nursing') || lowerName.includes('nurse')) return FaUserNurse;
+  if (lowerName.includes('pediatric') || lowerName.includes('baby')) return FaBaby;
+  if (lowerName.includes('cardiac') || lowerName.includes('heart')) return FaHeartbeat;
+  return FaHospitalUser; // default
+};
+
 export default function OrganizationalChart() {
+  const [orgUnits, setOrgUnits] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadOrgChart = async () => {
+      try {
+        const { data } = await http.get('/org-chart');
+        console.log('Org chart data received:', data);
+        if (Array.isArray(data) && data.length > 0) {
+          setOrgUnits(data);
+        } else {
+          console.warn('No organizational chart data received');
+          setOrgUnits([]);
+        }
+      } catch (err) {
+        console.error('Error loading organizational chart:', err);
+        setOrgUnits([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadOrgChart();
+  }, []);
+
+  // Build hierarchical structure
+  const buildHierarchy = () => {
+    if (orgUnits.length === 0) {
+      return <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>No organizational chart data available.</div>;
+    }
+
+    // Filter root units (those without parent_id or with null parent_id)
+    const rootUnits = orgUnits.filter(u => u.parent_id === null || u.parent_id === undefined || u.parent_id === 0);
+    const childrenMap = {};
+    
+    // Build children map - convert parent_id to number for consistent comparison
+    orgUnits.forEach(unit => {
+      const parentId = unit.parent_id;
+      if (parentId !== null && parentId !== undefined && parentId !== 0) {
+        const parentKey = typeof parentId === 'string' ? parseInt(parentId) : parentId;
+        if (!childrenMap[parentKey]) {
+          childrenMap[parentKey] = [];
+        }
+        childrenMap[parentKey].push(unit);
+      }
+    });
+    
+    console.log('Root units:', rootUnits);
+    console.log('Children map:', childrenMap);
+
+    const renderLevel = (units, level = 1) => {
+      if (units.length === 0) return null;
+
+      return (
+        <div key={`level-${level}`} className={`chart-node-group ${level === 1 ? 'group-level-2' : level === 2 ? 'group-level-3' : ''}`}>
+          {level === 1 ? (
+            <div className="chart-sibling-connect">
+              {units.map(unit => (
+                <ChartNode 
+                  key={unit.id}
+                  title={unit.name} 
+                  icon={getIconForRole(unit.name)} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="chart-sibling-connect">
+              {units.map(unit => (
+                <ChartNode 
+                  key={unit.id}
+                  title={unit.name} 
+                  icon={getIconForRole(unit.name)} 
+                />
+              ))}
+            </div>
+          )}
+          {units.map(unit => {
+            const unitId = typeof unit.id === 'string' ? parseInt(unit.id) : unit.id;
+            const children = childrenMap[unitId] || [];
+            return children.length > 0 ? (
+              <div key={`children-${unit.id}`} className={level === 1 ? 'node-group-vertical-align' : ''}>
+                {renderLevel(children, level + 1)}
+              </div>
+            ) : null;
+          })}
+        </div>
+      );
+    };
+
+    // Find root unit (usually the first one or one without parent)
+    const rootUnit = rootUnits.length > 0 ? rootUnits[0] : null;
+    
+    if (!rootUnit) {
+      return <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>No root organizational unit found.</div>;
+    }
+    
+    return (
+      <>
+        <div className="chart-level-1">
+          <ChartNode 
+            title={rootUnit.name} 
+            icon={getIconForRole(rootUnit.name)} 
+            className="top-node" 
+          />
+        </div>
+        {rootUnits.length > 1 && renderLevel(rootUnits.slice(1), 1)}
+        {(() => {
+          const rootId = typeof rootUnit.id === 'string' ? parseInt(rootUnit.id) : rootUnit.id;
+          return childrenMap[rootId] && childrenMap[rootId].length > 0 && renderLevel(childrenMap[rootId], 1);
+        })()}
+      </>
+    );
+  };
+
   return (
     // Base container for the soft pink background style
     <div className="org-chart-page">
@@ -56,35 +182,11 @@ export default function OrganizationalChart() {
         {/* --- Chart Layout Wrapper --- */}
         <div className="org-chart-wrapper">
           <div className="org-chart-scroll">
-
-            {/* Level 1: Hospital Director (Root Node) */}
-            <div className="chart-level-1">
-              <ChartNode 
-                title="Hospital Director" 
-                icon={FaHospitalUser} 
-                className="top-node" 
-              />
-            </div>
-            
-            {/* Level 2: Chiefs & Head (Sibling Row) */}
-            {/* This div group creates the vertical line down to the sibling line */}
-            <div className="chart-node-group group-level-2">
-                {/* This div creates the horizontal line connecting the three siblings */}
-                <div className="chart-sibling-connect">
-                    <ChartNode title="Chief of Medicine" icon={FaUserMd} />
-                    <ChartNode title="Chief of Administration" icon={FaUserTie} />
-                    <ChartNode title="Head of Nursing" icon={FaUserNurse} />
-                </div>
-            </div>
-
-            {/* Level 3: Department Heads */}
-            {/* The CSS for .node-group-vertical-align will center this under the Chief of Administration */}
-            <div className="chart-node-group node-group-vertical-align group-level-3">
-              <div className="chart-sibling-connect">
-                <ChartNode title="Department Head- Pediatrics" icon={FaBaby} />
-                <ChartNode title="Department Head- Cardiology" icon={FaHeartbeat} />
-              </div>
-            </div>
+            {loading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading organizational chart...</div>
+            ) : (
+              buildHierarchy()
+            )}
           </div>
         </div>
         

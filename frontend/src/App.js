@@ -10,6 +10,15 @@ import Events from './pages/Events.js';
 import Schedule from './pages/Schedule.js';
 import Appointments from './pages/Appointment.js';
 import { AuthProvider } from './context/AuthContext.js';
+import Booked from './pages/Booked.js';
+import AdminRoute from './components/AdminRoute.js';
+import AdminDashboard from './pages/admin/AdminDashboard.js';
+import AdminEvents from './pages/admin/AdminEvents.js';
+import AdminSchedule from './pages/admin/AdminSchedule.js';
+import AdminAppointments from './pages/admin/AdminAppointments.js';
+import AdminLogs from './pages/admin/AdminLogs.js';
+import AdminOrganizationalChart from './pages/admin/AdminOrganizationalChart.js';
+import AdminLogin from './pages/AdminLogin.js';
 
 function App() {
   return (
@@ -65,6 +74,63 @@ function App() {
           <ProtectedRoute>
             <Appointments />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/booked"
+        element={
+          <ProtectedRoute>
+            <Booked />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
+      />
+        <Route path="/admin/login" element={<AdminLogin />} />
+      <Route
+        path="/admin/events"
+        element={
+          <AdminRoute>
+            <AdminEvents />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/schedule"
+        element={
+          <AdminRoute>
+            <AdminSchedule />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/organizational-chart"
+        element={
+          <AdminRoute>
+            <AdminOrganizationalChart />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/appointments"
+        element={
+          <AdminRoute>
+            <AdminAppointments />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/logs"
+        element={
+          <AdminRoute>
+            <AdminLogs />
+          </AdminRoute>
         }
       />
         <Route path="*" element={<Navigate to="/login" replace />} />

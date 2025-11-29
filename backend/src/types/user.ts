@@ -3,6 +3,7 @@ export type User = {
   fullName: string;
   email: string;
   passwordHash: string;
+  role?: string;
   address?: string | null;
   contactNumber?: string | null;
   age?: number | null;
@@ -16,6 +17,7 @@ export type CreateUserInput = {
   address?: string | undefined;
   contactNumber?: string | undefined;
   age?: number | undefined;
+  role?: string | undefined;
 };
 
 export type PublicUser = Omit<User, 'passwordHash'>;

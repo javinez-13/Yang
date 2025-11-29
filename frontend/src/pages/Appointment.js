@@ -1,183 +1,109 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  FaHospitalUser, FaBookmark, FaPhoneAlt, FaFacebook, FaInstagram,
-  FaEnvelope, FaRegCircle, FaCheckCircle, FaPrint, FaRegClock
-} from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
-import "./Appointment.css"; // Import the CSS file
-import appointmentIllustration from '../assets/appointment_illustration.jpg';
-// Placeholder for a simple appointment illustration.
-// You would put an actual image in your `src/assets` folder or similar.
-// For now, I'll use a placeholder URL if the file isn't present.
-// Make sure to create an 'assets' folder inside your components folder or adjust the path.
-// If you use the actual image, rename it to appointment_illustration.png
-const AppointmentIllustration = ({ className }) => (
-    <img 
-        src={appointmentIllustration} 
-        alt="Appointment details illustration" 
-        className={className} 
-    />
-);
+import React, { useEffect, useState } from 'react';
+import AppLayout from '../components/AppLayout.js';
+import { http } from '../api/http.js';
 
+function formatDate(dateStr) {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
 
-// --- Main Appointment Page Component ---
-export default function Appointment() {
-  const navigate = useNavigate();
-  
-  // State for active filter categories
-  const [activeFilters, setActiveFilters] = useState([
-    'General Consultation', 'Teeth Cleaning', 'Vaccination'
-  ]);
+function Appointments() {
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const serviceTypes = [
-    "General Consultation",
-    "Teeth Cleaning",
-    "Vaccination",
-  ];
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const { data } = await http.get('/appointments/my-appointments');
+        setAppointments(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error loading appointments:', err);
+        setAppointments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAppointments();
+  }, []);
 
-  // Placeholder for booked appointments data
-  const bookedAppointments = [
-    { 
-      id: 1, 
-      month: 'August', 
-      day: '06', 
-      service: 'General Consultation', 
-      time: '10:00 AM',
-      category: 'General Consultation' // Used for filtering
-    },
-    { 
-      id: 2, 
-      month: 'August', 
-      day: '29', 
-      service: 'Teeth Cleaning', 
-      time: '08:00 AM',
-      category: 'Teeth Cleaning' // Used for filtering
-    },
-    { 
-      id: 3, 
-      month: 'September', 
-      day: '10', 
-      service: 'Vaccination', 
-      time: '08:00 AM',
-      category: 'Vaccination' // Used for filtering
-    },
-  ];
-
-  const toggleFilter = (filterName) => {
-    setActiveFilters(prevFilters => 
-      prevFilters.includes(filterName)
-        ? prevFilters.filter(f => f !== filterName)
-        : [...prevFilters, filterName]
-    );
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'confirmed': return '#27ae60';
+      case 'pending': return '#f39c12';
+      case 'completed': return '#3498db';
+      case 'cancelled': return '#e74c3c';
+      default: return '#666';
+    }
   };
 
-  const filteredAppointments = bookedAppointments.filter(app => 
-    activeFilters.includes(app.category)
-  );
-
   return (
-    <div className="appointment-page-container">
-      {/* Header */}
-      <header className="appointment-header">
-        <div className="logo">
-          <span className="logo-icon-container">
-            <FaHospitalUser className="logo-icon" />
-          </span>
-          <div className="logo-text">
-            <span className="logo-main-text">YangConnect</span>
-            <span className="logo-sub-text">Health Portal</span>
+    <AppLayout>
+      <div style={{ padding: 20 }}>
+        <h2>My Appointments</h2>
+        {loading ? (
+          <p>Loading appointments...</p>
+        ) : appointments.length === 0 ? (
+          <div style={{ 
+            background: 'rgba(255,255,255,0.9)', 
+            padding: 40, 
+            borderRadius: 12, 
+            textAlign: 'center' 
+          }}>
+            <p>No appointments scheduled.</p>
+            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 10 }}>
+              Book an appointment from the <a href="/schedule" style={{ color: '#007bff' }}>Schedule</a> page.
+            </p>
           </div>
-        </div>
-
-        <div className="header-title">
-          <FaBookmark className="title-icon" />
-          <h1>BOOKED</h1>
-        </div>
-
-        <a href="/dashboard" className="home-btn" aria-label="Home">🏠</a>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="appointment-main-content">
-        
-        {/* Left Column: Booked Appointment Filters */}
-        <div className="booked-appointment-filter-card">
-          <h2>Booked Appointment</h2>
-          <div className="service-type-section">
-            <p className="section-label">Service Type</p>
-            <div className="checkbox-group">
-              {serviceTypes.map(service => (
-                <label key={service} className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={activeFilters.includes(service)}
-                    onChange={() => toggleFilter(service)}
-                  />
-                  <span className="custom-checkbox">
-                    {activeFilters.includes(service) ? <FaCheckCircle /> : <FaRegCircle />}
-                  </span>
-                  {service}
-                </label>
-              ))}
-            </div>
+        ) : (
+          <div style={{ 
+            background: 'rgba(255,255,255,0.9)', 
+            borderRadius: 12, 
+            overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f5f5f5' }}>
+                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Service</th>
+                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Provider</th>
+                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Date</th>
+                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Time</th>
+                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {appointments.map(apt => (
+                  <tr key={apt.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: 12 }}><strong>{apt.service_type}</strong></td>
+                    <td style={{ padding: 12 }}>{apt.provider_name || 'N/A'}</td>
+                    <td style={{ padding: 12 }}>{formatDate(apt.appointment_date)}</td>
+                    <td style={{ padding: 12 }}>{apt.appointment_time}</td>
+                    <td style={{ padding: 12 }}>
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        borderRadius: 4, 
+                        background: getStatusColor(apt.status) + '20',
+                        color: getStatusColor(apt.status),
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        textTransform: 'capitalize'
+                      }}>
+                        {apt.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
-
-        {/* Right Column: Appointments List and Illustration */}
-        <div className="appointments-display-area">
-            <div className="appointments-list-container">
-                {filteredAppointments.length > 0 ? (
-                    filteredAppointments.map(app => (
-                        <div key={app.id} className="appointment-item-card">
-                            <div className="appointment-header-info">
-                                <span className="appointment-month-icon">
-                                    <FaRegCircle className="month-circle-icon" /> 
-                                    {app.month}
-                                </span>
-                                <span className="appointment-time-info">
-                                    <FaRegClock className="time-icon" />
-                                    {app.time}
-                                </span>
-                            </div>
-                            <p className="appointment-day-service">
-                                <span className="appointment-day">{app.day}</span>
-                                <span className="appointment-service">{app.service}</span>
-                            </p>
-                        </div>
-                    ))
-                ) : (
-                    <p className="no-appointments">No appointments matching your filters.</p>
-                )}
-            </div>
-            
-            <div className="illustration-print-section">
-                <AppointmentIllustration className="appointment-illustration" />
-                <button className="print-btn" onClick={() => window.print()}>
-                    <FaPrint className="print-icon" />
-                </button>
-            </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="appointment-footer">
-        <div className="footer-left">
-          <FaPhoneAlt className="phone-icon" />
-          <p>24/7 Hotline: 1-800-HEALTH (432584)</p>
-        </div>
-
-        <div className="footer-middle">
-          <FaFacebook className="social-icon" />
-          <FaInstagram className="social-icon" />
-          <FaXTwitter className="social-icon" />
-        </div>
-
-        <div className="footer-right">
-          <FaEnvelope className="mail-icon" />
-          <p>yangconnect@gmail.com</p>
-        </div>
-      </footer>
-    </div>
+        )}
+      </div>
+    </AppLayout>
   );
 }
+
+export default Appointments;

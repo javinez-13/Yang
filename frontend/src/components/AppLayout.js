@@ -33,7 +33,7 @@ const AppLayout = ({ children }) => {
           </div>
         </div>
         <nav style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-          <Link to="/dashboard" className="secondary-btn" style={{ textDecoration: 'none', textAlign: 'center', flex: '0 0 auto' }}>
+          <Link to={user?.role === 'admin' ? '/admin' : '/dashboard'} className="secondary-btn" style={{ textDecoration: 'none', textAlign: 'center', flex: '0 0 auto' }}>
             Dashboard
           </Link>
           <Link to="/profile" className="secondary-btn" style={{ textDecoration: 'none', textAlign: 'center', flex: '0 0 auto' }}>

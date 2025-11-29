@@ -62,9 +62,6 @@ CREATE TABLE IF NOT EXISTS provider_availability (
   end_time TIME NOT NULL
 );
 
--- ====================
--- APPOINTMENTS (KEY TABLE)
--- ====================
 CREATE TABLE IF NOT EXISTS appointments (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- The patient
@@ -77,18 +74,22 @@ CREATE TABLE IF NOT EXISTS appointments (
   notes TEXT
 );
 
--- ====================
--- SEED DATA
--- ====================
 
--- User Seed Data: Adding a dedicated Provider
 INSERT INTO users (full_name, email, password_hash, contact_number, age, address, role)
 VALUES
-  ('John Kevin Javinez', 'javinezsarira@gmail.com', '$2a$10$1WWvXJZLs1Xoi6cUCChnPehfZNXNGYo8FnHzi/0coSEs4QYlUYUQ6', '09221546397', 26, 'Poblacion, Cordova', 'patient'),
-  ('YangConnect Admin', 'admin@yangconnect.com', '$2a$10$1WWvXJZLs1Xoi6cUCChnPehfZNXNGYo8FnHzi/0coSEs4QYlUYUQ6', '1-800-HEALTH', NULL, 'Cordova HQ', 'admin'),
-  ('Dr. Maria Santos', 'maria.santos@yangconnect.com', '$2a$10$1WWvXJZLs1Xoi6cUCChnPehfZNXNGYo8FnHzi/0coSEs4QYlUYUQ6', '09170000000', 45, 'Makati Medical Center', 'provider')
+    ('John Kevin Javinez', 'javinezsarira@gmail.com', '$2a$10$1WWvXJZLs1Xoi6cUCChnPehfZNXNGYo8FnHzi/0coSEs4QYlUYUQ6', '09221546397', 26, 'Poblacion, Cordova', 'patient'),
+        ('YangConnect Admin', 'admin@yangconnect.com', '$2b$10$4PoUmw6zJhNRZ9/NZlMSp.ChLSm.FrT9C1MOQBYHsID38Ps9WCRn.', '1-800-HEALTH', NULL, 'Cordova HQ', 'admin'),
+    ('Dr. Maria Santos', 'maria.santos@yangconnect.com', '$2a$10$1WWvXJZLs1Xoi6cUCChnPehfZNXNGYo8FnHzi/0coSEs4QYlUYUQ6', '09170000000', 45, 'Makati Medical Center', 'provider')
 ON CONFLICT (email) DO NOTHING;
 
+
+-- System logs for admin auditing
+CREATE TABLE IF NOT EXISTS system_logs (
+    id SERIAL PRIMARY KEY,
+    message VARCHAR(200) NOT NULL,
+    meta JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 -- Define constants for user IDs for easier seeding
 WITH user_ids AS (
     SELECT id, email FROM users

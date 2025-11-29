@@ -27,7 +27,7 @@ const DashboardPage = () => {
     "Organizational Chart": "/organizational-chart",
     "Events": "/events",
     "Schedule": "/schedule",
-    "Appointment": "/appointments"
+    "Appointment": "/booked"
   };
 
   return (

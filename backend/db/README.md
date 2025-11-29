@@ -16,4 +16,11 @@
 
 The `init.sql` script provisions the `users` table and UUID helpers required by the authentication, profile, and dashboard features.
 
+Default admin credentials (when using the seeded data):
+
+- Email: `admin@yangconnect.com`
+- Password: `admin1234`
+
+Note: If you already seeded the database, re-running the seed will not create duplicate users due to `ON CONFLICT (email) DO NOTHING`.
+
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaHospitalUser, FaNewspaper, FaMicrophoneAlt, FaSyringe, FaHandsHelping,
@@ -6,6 +6,7 @@ import {
   FaChevronLeft, FaChevronRight // New imports for cleaner nav buttons
 } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
+import { http } from '../api/http.js';
 import "./Events.css";
 
 // --- Helper: Calendar Component ---
@@ -76,16 +77,42 @@ export default function Events() {
 
   // State for active event filter category
   const [activeCategory, setActiveCategory] = useState('All Events');
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const monthNames = ["January", "February", "March", "April", "May", "June",
                       "July", "August", "September", "October", "November", "December"];
 
-  // Placeholder for event data
-  const upcomingEvents = [
-    { id: 1, month: 'SEP', day: 11, title: 'Annual Health and Wellness Fair', time: '10:00 AM' },
-    { id: 2, month: 'OCT', day: 11, title: 'Flu Shot Clinic', time: '08:00 AM' },
-    { id: 3, month: 'NOV', day: 24, title: 'Operation Tuli', time: '10:00 AM' },
-  ];
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const { data } = await http.get('/events');
+        setEvents(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error loading events:', err);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadEvents();
+  }, []);
+
+  // Transform events from backend to display format
+  const upcomingEvents = events.map(event => {
+    const eventDate = new Date(event.event_date);
+    const monthAbbr = monthNames[eventDate.getMonth()].substring(0, 3).toUpperCase();
+    const day = eventDate.getDate();
+    return {
+      id: event.id,
+      month: monthAbbr,
+      day: day,
+      title: event.title,
+      time: event.location || 'TBA',
+      description: event.description,
+      location: event.location
+    };
+  });
 
   const eventCategories = [
     { name: 'All Events', icon: FaRegCalendarCheck, color: '#6a6cff' },
@@ -164,23 +191,35 @@ export default function Events() {
         {/* Right Column: Upcoming Events */}
         <div className="upcoming-events-card">
           <h2>Upcoming Events</h2>
-          <div className="upcoming-event-list">
-            {upcomingEvents.map(event => (
-              <div key={event.id} className="upcoming-event-item">
-                <div className="event-date">
-                  <span className="event-month">{event.month}</span>
-                  <span className="event-day">{event.day}</span>
+          {loading ? (
+            <p>Loading events...</p>
+          ) : upcomingEvents.length === 0 ? (
+            <p>No upcoming events scheduled.</p>
+          ) : (
+            <div className="upcoming-event-list">
+              {upcomingEvents.map(event => (
+                <div key={event.id} className="upcoming-event-item">
+                  <div className="event-date">
+                    <span className="event-month">{event.month}</span>
+                    <span className="event-day">{event.day}</span>
+                  </div>
+                  <div className="event-details">
+                    <p className="event-title">{event.title}</p>
+                    {event.description && (
+                      <p className="event-description" style={{ fontSize: '0.85rem', color: '#666', marginTop: 4 }}>
+                        {event.description}
+                      </p>
+                    )}
+                    {event.location && (
+                      <p className="event-time">
+                        <FaMapPin style={{marginRight: '5px', color: '#e86a6c'}} /> {event.location}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="event-details">
-                  <p className="event-title">{event.title}</p>
-                  <p className="event-time">
-                    <FaMapPin style={{marginRight: '5px', color: '#e86a6c'}} /> {event.time}
-                  </p>
-                </div>
-                {/* Removed FaMapPin from the side, integrated into time/details */}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
