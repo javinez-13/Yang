@@ -16,6 +16,9 @@ import {
   updateSchedule,
   deleteSchedule,
   getProviders,
+  getRestrictedSlots,
+  createRestrictedSlot,
+  deleteRestrictedSlot,
 } from '../controllers/adminController';
 import { authenticate } from '../middlewares/authMiddleware';
 import { requireAdmin } from '../middlewares/adminMiddleware';
@@ -52,5 +55,10 @@ router.delete('/schedules/:id', deleteSchedule);
 
 // providers
 router.get('/providers', getProviders);
+
+// restricted time slots
+router.get('/restricted-slots', getRestrictedSlots);
+router.post('/restricted-slots', createRestrictedSlot);
+router.delete('/restricted-slots/:providerId/:dayOfWeek/:time', deleteRestrictedSlot);
 
 export default router;

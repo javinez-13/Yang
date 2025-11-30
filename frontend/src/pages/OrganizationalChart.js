@@ -127,10 +127,11 @@ export default function OrganizationalChart() {
     };
 
     // Find root unit (usually the first one or one without parent)
-    const rootUnit = rootUnits.length > 0 ? rootUnits[0] : null;
+    // If no root units found, use the first unit as root (fallback)
+    const rootUnit = rootUnits.length > 0 ? rootUnits[0] : (orgUnits.length > 0 ? orgUnits[0] : null);
     
     if (!rootUnit) {
-      return <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>No root organizational unit found.</div>;
+      return <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>No organizational chart data available. Please contact an administrator to add organizational units.</div>;
     }
     
     return (
@@ -180,10 +181,14 @@ export default function OrganizationalChart() {
         </header>
 
         {/* --- Chart Layout Wrapper --- */}
-        <div className="org-chart-wrapper">
+        <div className="org-chart-wrapper" style={{ minHeight: '400px' }}>
           <div className="org-chart-scroll">
             {loading ? (
               <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading organizational chart...</div>
+            ) : orgUnits.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
+                <p>No organizational chart data available. Please contact an administrator to add organizational units.</p>
+              </div>
             ) : (
               buildHierarchy()
             )}

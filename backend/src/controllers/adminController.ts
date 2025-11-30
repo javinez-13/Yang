@@ -97,3 +97,23 @@ export const getProviders = async (_req: Request, res: Response) => {
   const providers = await adminService.listProviders();
   res.json(providers);
 };
+
+// Restricted Time Slots
+export const getRestrictedSlots = async (_req: Request, res: Response) => {
+  const slots = await adminService.listRestrictedSlots();
+  res.json(slots);
+};
+
+export const createRestrictedSlot = async (req: Request, res: Response) => {
+  const data = req.body;
+  const created = await adminService.createRestrictedSlot(data);
+  res.status(201).json(created);
+};
+
+export const deleteRestrictedSlot = async (req: Request, res: Response) => {
+  const providerId = req.params.providerId!;
+  const dayOfWeek = parseInt(req.params.dayOfWeek!);
+  const time = req.params.time!;
+  await adminService.deleteRestrictedSlot(providerId, dayOfWeek, time);
+  res.status(204).send();
+};

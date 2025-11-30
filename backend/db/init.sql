@@ -55,11 +55,22 @@ CREATE TABLE IF NOT EXISTS events (
 -- Provider availability slots (REPLACING schedule_items)
 -- This tracks when a doctor/provider is generally available.
 CREATE TABLE IF NOT EXISTS provider_availability (
-  id SERIAL PRIMARY KEY,
-  provider_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday, 6=Saturday
-  start_time TIME NOT NULL,
-  end_time TIME NOT NULL
+  id SERIAL PRIMARY KEY,
+  provider_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday, 6=Saturday
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL
+);
+
+-- Restricted time slots within provider availability
+-- Admin can restrict specific time slots (e.g., 8:30-10:00) even if they're within the available hours
+CREATE TABLE IF NOT EXISTS restricted_time_slots (
+  id SERIAL PRIMARY KEY,
+  provider_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  time TIME NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(provider_id, day_of_week, time)
 );
 
 CREATE TABLE IF NOT EXISTS appointments (

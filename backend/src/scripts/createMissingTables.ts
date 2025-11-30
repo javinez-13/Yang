@@ -114,6 +114,30 @@ const run = async () => {
     `);
     console.log('✅ system_logs table created/verified');
 
+    // Create restricted_time_slots table (depends on users)
+    if (userIdType === 'UUID') {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS restricted_time_slots (
+          id SERIAL PRIMARY KEY,
+          provider_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+          time TIME NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(provider_id, day_of_week, time))
+      `);
+    } else {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS restricted_time_slots (
+          id SERIAL PRIMARY KEY,
+          provider_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+          time TIME NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          UNIQUE(provider_id, day_of_week, time))
+      `);
+    }
+    console.log('✅ restricted_time_slots table created/verified');
+
     // Insert sample data (only if tables are empty)
     const orgCount = await client.query('SELECT COUNT(*) FROM org_units');
     if (parseInt(orgCount.rows[0].count) === 0) {

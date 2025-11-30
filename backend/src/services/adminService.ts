@@ -3,6 +3,7 @@ import { AppointmentRepository } from '../repositories/appointmentRepository';
 import { LogRepository } from '../repositories/logRepository';
 import { OrgUnitRepository } from '../repositories/orgUnitRepository';
 import { ProviderAvailabilityRepository } from '../repositories/providerAvailabilityRepository';
+import { RestrictedSlotRepository } from '../repositories/restrictedSlotRepository';
 import { UserRepository } from '../repositories/userRepository';
 
 export class AdminService {
@@ -12,6 +13,7 @@ export class AdminService {
     private readonly logRepo = new LogRepository(),
     private readonly orgUnitRepo = new OrgUnitRepository(),
     private readonly providerAvailabilityRepo = new ProviderAvailabilityRepository(),
+    private readonly restrictedSlotRepo = new RestrictedSlotRepository(),
     private readonly userRepo = new UserRepository(),
   ) {}
 
@@ -113,5 +115,27 @@ export class AdminService {
       email: row.email,
       role: row.role,
     }));
+  }
+
+  // Restricted Time Slots
+  async listRestrictedSlots() {
+    return this.restrictedSlotRepo.findAll();
+  }
+
+  async createRestrictedSlot(payload: { provider_id: string | number; day_of_week: number; time: string }) {
+    // Check if slot already exists
+    const existing = await this.restrictedSlotRepo.findOne(payload.provider_id, payload.day_of_week, payload.time);
+    if (existing) {
+      throw new Error('This time slot is already restricted');
+    }
+    const created = await this.restrictedSlotRepo.create(payload);
+    await this.logRepo.create('time_slot_restricted', created);
+    return created;
+  }
+
+  async deleteRestrictedSlot(providerId: string | number, dayOfWeek: number, time: string) {
+    await this.restrictedSlotRepo.delete(providerId, dayOfWeek, time);
+    await this.logRepo.create('time_slot_unrestricted', { provider_id: providerId, day_of_week: dayOfWeek, time });
+    return true;
   }
 }

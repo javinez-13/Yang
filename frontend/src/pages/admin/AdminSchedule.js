@@ -6,24 +6,41 @@ export default function AdminSchedule() {
   const [schedules, setSchedules] = useState([]);
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    provider_id: '',
-    day_of_week: '',
-    start_time: '',
-    end_time: ''
-  });
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [restrictedSlots, setRestrictedSlots] = useState({}); // { "provider-day-time": true }
 
   const daysOfWeek = [
-    { value: 0, label: 'Sunday' },
-    { value: 1, label: 'Monday' },
-    { value: 2, label: 'Tuesday' },
-    { value: 3, label: 'Wednesday' },
-    { value: 4, label: 'Thursday' },
-    { value: 5, label: 'Friday' },
-    { value: 6, label: 'Saturday' }
+    { value: 0, label: 'Sunday', short: 'Sun' },
+    { value: 1, label: 'Monday', short: 'Mon' },
+    { value: 2, label: 'Tuesday', short: 'Tue' },
+    { value: 3, label: 'Wednesday', short: 'Wed' },
+    { value: 4, label: 'Thursday', short: 'Thu' },
+    { value: 5, label: 'Friday', short: 'Fri' },
+    { value: 6, label: 'Saturday', short: 'Sat' }
   ];
+
+  // Generate time slots (30-minute intervals from 8:00 AM to 6:00 PM)
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 8; hour < 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const displayTime = formatTime(timeStr);
+        slots.push({ time: timeStr, display: displayTime });
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  const formatTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -32,6 +49,9 @@ export default function AdminSchedule() {
       try {
         const { data: providersData } = await http.get('/admin/providers');
         setProviders(Array.isArray(providersData) ? providersData : []);
+        if (providersData.length > 0 && !selectedProvider) {
+          setSelectedProvider(providersData[0].id.toString());
+        }
       } catch (err) {
         console.warn('Could not load providers:', err);
         setProviders([]);
@@ -45,6 +65,22 @@ export default function AdminSchedule() {
         console.warn('Could not load schedules:', err);
         setSchedules([]);
       }
+
+      // Load restricted slots (if endpoint exists)
+      try {
+        const { data: restrictedData } = await http.get('/admin/restricted-slots');
+        if (restrictedData && Array.isArray(restrictedData)) {
+          const restrictedMap = {};
+          restrictedData.forEach(slot => {
+            const key = `${slot.provider_id}-${slot.day_of_week}-${slot.time}`;
+            restrictedMap[key] = true;
+          });
+          setRestrictedSlots(restrictedMap);
+        }
+      } catch (err) {
+        // Endpoint might not exist yet, that's okay
+        console.log('Restricted slots endpoint not available yet');
+      }
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -56,56 +92,79 @@ export default function AdminSchedule() {
     loadData();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingId) {
-        // When editing, only send time fields (provider and day cannot be changed)
-        await http.put(`/admin/schedules/${editingId}`, {
-          start_time: formData.start_time,
-          end_time: formData.end_time
-        });
-      } else {
-        await http.post('/admin/schedules', formData);
-      }
-      await loadData();
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ provider_id: '', day_of_week: '', start_time: '', end_time: '' });
-    } catch (err) {
-      alert('Error saving schedule: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleEdit = (schedule) => {
-    setEditingId(schedule.id);
-    setFormData({
-      provider_id: schedule.provider_id.toString(),
-      day_of_week: schedule.day_of_week.toString(),
-      start_time: schedule.start_time,
-      end_time: schedule.end_time
-    });
-    setShowForm(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
-    try {
-      await http.delete(`/admin/schedules/${id}`);
-      await loadData();
-    } catch (err) {
-      alert('Error deleting schedule: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
   const getProviderName = (providerId) => {
     const provider = providers.find(p => p.id === providerId || p.id === parseInt(providerId));
     return provider ? (provider.full_name || provider.fullName) : `Provider #${providerId}`;
   };
 
-  const getDayName = (dayOfWeek) => {
-    const day = daysOfWeek.find(d => d.value === dayOfWeek);
-    return day ? day.label : `Day ${dayOfWeek}`;
+  // Get schedules for selected provider and day
+  const getScheduleForDay = (dayValue) => {
+    if (!selectedProvider) return null;
+    return schedules.find(s => 
+      s.provider_id === parseInt(selectedProvider) && 
+      s.day_of_week === dayValue
+    );
+  };
+
+  // Check if a time slot is within the schedule range
+  const isTimeInSchedule = (time, schedule) => {
+    if (!schedule) return false;
+    const [timeHour, timeMin] = time.split(':').map(Number);
+    const [startHour, startMin] = schedule.start_time.split(':').map(Number);
+    const [endHour, endMin] = schedule.end_time.split(':').map(Number);
+    
+    const timeMinutes = timeHour * 60 + timeMin;
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+  };
+
+  // Check if a time slot is restricted
+  const isSlotRestricted = (dayValue, time) => {
+    if (!selectedProvider) return false;
+    const key = `${selectedProvider}-${dayValue}-${time}`;
+    return restrictedSlots[key] === true;
+  };
+
+  // Toggle slot restriction
+  const toggleSlotRestriction = async (dayValue, time) => {
+    if (!selectedProvider) {
+      alert('Please select a provider first');
+      return;
+    }
+
+    const key = `${selectedProvider}-${dayValue}-${time}`;
+    const isRestricted = restrictedSlots[key] === true;
+    const newRestrictedSlots = { ...restrictedSlots };
+
+    try {
+      if (isRestricted) {
+        // Remove restriction
+        delete newRestrictedSlots[key];
+        await http.delete(`/admin/restricted-slots/${selectedProvider}/${dayValue}/${time}`);
+      } else {
+        // Add restriction
+        newRestrictedSlots[key] = true;
+        await http.post('/admin/restricted-slots', {
+          provider_id: parseInt(selectedProvider),
+          day_of_week: dayValue,
+          time: time
+        });
+      }
+      setRestrictedSlots(newRestrictedSlots);
+    } catch (err) {
+      console.error('Error toggling slot restriction:', err);
+      alert('Error updating slot: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const getSlotStatus = (dayValue, time) => {
+    const schedule = getScheduleForDay(dayValue);
+    if (!schedule) return 'no-schedule';
+    if (!isTimeInSchedule(time, schedule)) return 'outside';
+    if (isSlotRestricted(dayValue, time)) return 'restricted';
+    return 'available';
   };
 
   return (
@@ -113,174 +172,193 @@ export default function AdminSchedule() {
       <div style={{ padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2>Manage Schedule</h2>
-          <button 
-            className="primary-btn" 
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-              setFormData({ provider_id: '', day_of_week: '', start_time: '', end_time: '' });
-            }}
-          >
-            Add Schedule
-          </button>
         </div>
 
-        {showForm && (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            padding: 20, 
-            borderRadius: 12, 
-            marginBottom: 20,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            <h3>{editingId ? 'Edit' : 'Add'} Schedule</h3>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {!editingId ? (
-                <>
-                  <label>
-                    Provider:
-                    <select
-                      value={formData.provider_id}
-                      onChange={(e) => setFormData({ ...formData, provider_id: e.target.value })}
-                      required
-                      style={{ width: '100%', padding: 8, marginTop: 4 }}
-                    >
-                      <option value="">Select Provider</option>
-                      {providers.map(p => (
-                        <option key={p.id} value={p.id}>{(p.full_name || p.fullName)} ({p.email})</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Day of Week:
-                    <select
-                      value={formData.day_of_week}
-                      onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                      required
-                      style={{ width: '100%', padding: 8, marginTop: 4 }}
-                    >
-                      <option value="">Select Day</option>
-                      {daysOfWeek.map(d => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                </>
-              ) : (
-                <>
-                  <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 6 }}>
-                    <strong>Provider:</strong> {getProviderName(formData.provider_id)}
-                  </div>
-                  <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 6 }}>
-                    <strong>Day:</strong> {getDayName(parseInt(formData.day_of_week))}
-                  </div>
-                  <p style={{ fontSize: '0.9rem', color: '#666', margin: 0 }}>
-                    Note: Only time can be edited. Provider and day cannot be changed.
-                  </p>
-                </>
-              )}
-              <label>
-                Start Time:
-                <input
-                  type="time"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                />
-              </label>
-              <label>
-                End Time:
-                <input
-                  type="time"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                  required
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
-                />
-              </label>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" className="primary-btn">Save</button>
-                <button 
-                  type="button" 
-                  className="secondary-btn"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingId(null);
-                    setFormData({ provider_id: '', day_of_week: '', start_time: '', end_time: '' });
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+        {/* Provider Selection */}
+        <div style={{ 
+          background: 'rgba(255,255,255,0.9)', 
+          padding: 20, 
+          borderRadius: 12, 
+          marginBottom: 20,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <label style={{ display: 'block', marginBottom: 10, fontWeight: 600 }}>
+            Select Provider:
+            <select
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+              style={{ 
+                width: '100%', 
+                padding: 10, 
+                marginTop: 8,
+                fontSize: '1rem',
+                borderRadius: 6,
+                border: '1px solid #ddd'
+              }}
+            >
+              <option value="">Select Provider</option>
+              {providers.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.full_name || p.fullName} ({p.email})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {loading ? (
-          <p>Loading...</p>
-        ) : schedules.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center' }}>Loading schedules...</div>
+        ) : !selectedProvider ? (
           <div style={{ 
             background: 'rgba(255,255,255,0.9)', 
             padding: 40, 
             borderRadius: 12, 
             textAlign: 'center' 
           }}>
-            <p>No schedules found. Add a schedule to get started.</p>
-            <p style={{ fontSize: '0.9rem', color: '#666', marginTop: 10 }}>
-              Note: Schedule management endpoints may need to be implemented in the backend.
-            </p>
+            <p>Please select a provider to view and manage their schedule.</p>
           </div>
         ) : (
           <div style={{ 
             background: 'rgba(255,255,255,0.9)', 
             borderRadius: 12, 
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            padding: 20,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            overflowX: 'auto'
           }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f5' }}>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Provider</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Day</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Start Time</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>End Time</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedules.map(schedule => (
-                  <tr key={schedule.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 12 }}>{getProviderName(schedule.provider_id)}</td>
-                    <td style={{ padding: 12 }}>{getDayName(schedule.day_of_week)}</td>
-                    <td style={{ padding: 12 }}>{schedule.start_time}</td>
-                    <td style={{ padding: 12 }}>{schedule.end_time}</td>
-                    <td style={{ padding: 12 }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button 
-                          className="secondary-btn" 
-                          style={{ padding: '4px 12px', fontSize: '0.9rem' }}
-                          onClick={() => handleEdit(schedule)}
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          className="secondary-btn" 
-                          style={{ padding: '4px 12px', fontSize: '0.9rem', color: '#c0392b' }}
-                          onClick={() => handleDelete(schedule.id)}
-                        >
-                          Delete
-                        </button>
+            <h3 style={{ marginTop: 0, marginBottom: 20 }}>
+              Schedule for {getProviderName(selectedProvider)}
+            </h3>
+            
+            {/* Calendar Grid */}
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: '120px repeat(7, 1fr)',
+              gap: 8,
+              minWidth: '800px'
+            }}>
+              {/* Time column header */}
+              <div style={{ 
+                padding: 12, 
+                background: '#f5f5f5', 
+                fontWeight: 600,
+                textAlign: 'center',
+                border: '1px solid #ddd',
+                borderRadius: 6
+              }}>
+                Time
+              </div>
+              
+              {/* Day headers */}
+              {daysOfWeek.map(day => (
+                <div key={day.value} style={{ 
+                  padding: 12, 
+                  background: '#f5f5f5', 
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  border: '1px solid #ddd',
+                  borderRadius: 6
+                }}>
+                  <div>{day.short}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#666', marginTop: 4 }}>
+                    {getScheduleForDay(day.value) 
+                      ? `${getScheduleForDay(day.value).start_time} - ${getScheduleForDay(day.value).end_time}`
+                      : 'No schedule'
+                    }
+                  </div>
+                </div>
+              ))}
+
+              {/* Time slots */}
+              {timeSlots.map((slot, idx) => (
+                <React.Fragment key={slot.time}>
+                  {/* Time label */}
+                  <div style={{ 
+                    padding: 8, 
+                    background: idx % 2 === 0 ? '#fafafa' : 'white',
+                    textAlign: 'right',
+                    fontSize: '0.85rem',
+                    color: '#666',
+                    border: '1px solid #eee',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end'
+                  }}>
+                    {slot.display}
+                  </div>
+                  
+                  {/* Day cells */}
+                  {daysOfWeek.map(day => {
+                    const status = getSlotStatus(day.value, slot.time);
+                    const isClickable = status === 'available' || status === 'restricted';
+                    
+                    return (
+                      <div
+                        key={`${day.value}-${slot.time}`}
+                        onClick={() => isClickable && toggleSlotRestriction(day.value, slot.time)}
+                        style={{
+                          padding: 8,
+                          background: 
+                            status === 'restricted' ? '#e74c3c' :
+                            status === 'available' ? '#27ae60' :
+                            status === 'outside' ? '#ecf0f1' :
+                            '#bdc3c7',
+                          color: status === 'restricted' || status === 'available' ? 'white' : '#666',
+                          textAlign: 'center',
+                          fontSize: '0.75rem',
+                          border: '1px solid #ddd',
+                          cursor: isClickable ? 'pointer' : 'default',
+                          transition: 'all 0.2s',
+                          opacity: status === 'no-schedule' ? 0.5 : 1,
+                          position: 'relative'
+                        }}
+                        title={
+                          status === 'restricted' ? 'Click to make available' :
+                          status === 'available' ? 'Click to restrict' :
+                          status === 'outside' ? 'Outside schedule hours' :
+                          'No schedule for this day'
+                        }
+                      >
+                        {status === 'restricted' && '🚫'}
+                        {status === 'available' && '✓'}
+                        {status === 'outside' && '—'}
+                        {status === 'no-schedule' && '○'}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Legend */}
+            <div style={{ 
+              marginTop: 20, 
+              padding: 15, 
+              background: '#f9f9f9', 
+              borderRadius: 6,
+              display: 'flex',
+              gap: 20,
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 20, height: 20, background: '#27ae60', borderRadius: 4 }}></div>
+                <span style={{ fontSize: '0.9rem' }}>Available (click to restrict)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 20, height: 20, background: '#e74c3c', borderRadius: 4 }}></div>
+                <span style={{ fontSize: '0.9rem' }}>Restricted (click to make available)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 20, height: 20, background: '#ecf0f1', borderRadius: 4 }}></div>
+                <span style={{ fontSize: '0.9rem' }}>Outside schedule hours</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 20, height: 20, background: '#bdc3c7', borderRadius: 4, opacity: 0.5 }}></div>
+                <span style={{ fontSize: '0.9rem' }}>No schedule for this day</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
     </AppLayout>
   );
 }
-
