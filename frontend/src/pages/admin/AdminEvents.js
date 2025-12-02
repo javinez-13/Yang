@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import AppLayout from '../../components/AppLayout.js';
+import AdminPageHeader from '../../components/AdminPageHeader.js';
+import useAutoRefresh from '../../hooks/useAutoRefresh.js';
 import { http } from '../../api/http.js';
 
 export default function AdminEvents() {
@@ -11,10 +13,10 @@ export default function AdminEvents() {
     title: '',
     description: '',
     event_date: '',
-    location: ''
+    location: '',
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await http.get('/admin/events');
@@ -24,12 +26,12 @@ export default function AdminEvents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  const { lastUpdated, isRefreshing, manualRefresh } = useAutoRefresh(load, 60000);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     try {
       if (editingId) {
         await http.put(`/admin/events/${editingId}`, formData);
@@ -66,75 +68,95 @@ export default function AdminEvents() {
     }
   };
 
+  const upcomingEvents = useMemo(
+    () =>
+      [...events]
+        .filter((event) => new Date(event.event_date) >= new Date())
+        .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))
+        .slice(0, 4),
+    [events]
+  );
+
+  const refreshDescriptor = lastUpdated
+    ? `Updated • ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Syncing…';
+
   return (
     <AppLayout>
-      <div style={{ padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2>Manage Events</h2>
-          <button 
-            className="primary-btn" 
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-              setFormData({ title: '', description: '', event_date: '', location: '' });
-            }}
-          >
-            Add Event
-          </button>
-        </div>
+      <div className="admin-panel">
+        <AdminPageHeader
+          title="Events"
+          subtitle="Admin Portal / Events"
+          description="Curate vaccination drives, health fairs and internal gatherings."
+          actions={
+            <>
+              <div className="refresh-pill">⟳ {isRefreshing ? 'Refreshing…' : refreshDescriptor}</div>
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                  setFormData({ title: '', description: '', event_date: '', location: '' });
+                }}
+              >
+                Add Event
+              </button>
+              <button className="secondary-btn" onClick={manualRefresh}>
+                Refresh
+              </button>
+            </>
+          }
+        />
 
         {showForm && (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            padding: 20, 
-            borderRadius: 12, 
-            marginBottom: 20,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            <h3>{editingId ? 'Edit' : 'Add'} Event</h3>
+          <div className="admin-panel" style={{ marginTop: 0 }}>
+            <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit event' : 'Add new event'}</h3>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label>
-                Title:
+                Title
                 <input
                   type="text"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, title: event.target.value })}
                   required
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  className="input-field"
                 />
               </label>
               <label>
-                Description:
+                Description
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                   rows={3}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  className="input-field"
+                  style={{ minHeight: 80 }}
                 />
               </label>
               <label>
-                Event Date:
+                Event Date
                 <input
                   type="date"
                   value={formData.event_date}
-                  onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, event_date: event.target.value })}
                   required
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  className="input-field"
                 />
               </label>
               <label>
-                Location:
+                Location
                 <input
                   type="text"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  onChange={(event) => setFormData({ ...formData, location: event.target.value })}
+                  className="input-field"
                 />
               </label>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" className="primary-btn">Save</button>
-                <button 
-                  type="button" 
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button type="submit" className="primary-btn">
+                  Save
+                </button>
+                <button
+                  type="button"
                   className="secondary-btn"
                   onClick={() => {
                     setShowForm(false);
@@ -150,62 +172,72 @@ export default function AdminEvents() {
         )}
 
         {loading ? (
-          <p>Loading…</p>
+          <p>Loading events…</p>
         ) : events.length === 0 ? (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            padding: 40, 
-            borderRadius: 12, 
-            textAlign: 'center' 
-          }}>
-            <p>No events found. Add an event to get started.</p>
-          </div>
+          <p>No events found. Add an event to get started.</p>
         ) : (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            borderRadius: 12, 
-            overflow: 'hidden',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f5' }}>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Title</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Description</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Date</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Location</th>
-                  <th style={{ padding: 12, textAlign: 'left', borderBottom: '2px solid #ddd' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map(event => (
-                  <tr key={event.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 12 }}><strong>{event.title}</strong></td>
-                    <td style={{ padding: 12 }}>{event.description || '—'}</td>
-                    <td style={{ padding: 12 }}>{new Date(event.event_date).toLocaleDateString()}</td>
-                    <td style={{ padding: 12 }}>{event.location || '—'}</td>
-                    <td style={{ padding: 12 }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button 
-                          className="secondary-btn" 
-                          style={{ padding: '4px 12px', fontSize: '0.9rem' }}
-                          onClick={() => handleEdit(event)}
-                        >
-                          Edit
-                        </button>
-                        <button 
-                          className="secondary-btn" 
-                          style={{ padding: '4px 12px', fontSize: '0.9rem', color: '#c0392b' }}
-                          onClick={() => handleDelete(event.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+          <div className="admin-split">
+            <div className="admin-panel" style={{ marginBottom: 0 }}>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th></th>
                   </tr>
+                </thead>
+                <tbody>
+                  {events.map((event) => (
+                    <tr key={event.id}>
+                      <td>
+                        <strong>{event.title}</strong>
+                      </td>
+                      <td>{event.description || '—'}</td>
+                      <td>{new Date(event.event_date).toLocaleDateString()}</td>
+                      <td>{event.location || '—'}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="secondary-btn" onClick={() => handleEdit(event)}>
+                            Edit
+                          </button>
+                          <button
+                            className="secondary-btn"
+                            style={{ color: '#c0392b' }}
+                            onClick={() => handleDelete(event.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <aside className="side-panel">
+              <h3>Upcoming Events</h3>
+              <p className="page-note">Auto-refresh keeps stakeholders in sync.</p>
+              <div className="upcoming-list">
+                {upcomingEvents.length === 0 && <p>No scheduled events.</p>}
+                {upcomingEvents.map((item) => (
+                  <div key={item.id} className="upcoming-item">
+                    <strong>{item.title}</strong>
+                    <div className="page-note">
+                      {new Date(item.event_date).toLocaleDateString()} · {item.location || 'To be announced'}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              <div className="calendar-shell">
+                <strong>
+                  {new Date().toLocaleString('default', { month: 'long' })} {new Date().getFullYear()}
+                </strong>
+                <p className="page-note">Events sync to staff calendars every hour.</p>
+              </div>
+            </aside>
           </div>
         )}
       </div>

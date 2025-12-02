@@ -20,6 +20,7 @@ import AdminAppointments from './pages/admin/AdminAppointments.js';
 import AdminLogs from './pages/admin/AdminLogs.js';
 import AdminOrganizationalChart from './pages/admin/AdminOrganizationalChart.js';
 import AdminLogin from './pages/AdminLogin.js';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.js';
 import SystemSettings from './pages/admin/SystemSettings.js';
 
 function App() {
@@ -41,6 +42,14 @@ function App() {
           element={
             <GuestRoute>
               <SignupPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <GuestRoute>
+              <ForgotPasswordPage />
             </GuestRoute>
           }
         />

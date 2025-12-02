@@ -4,16 +4,13 @@ import {
   FaUserNurse,
   FaHospitalUser,
   FaSitemap,
-  FaPhoneAlt,
-  FaFacebook,
-  FaInstagram,
-  FaEnvelope,
   FaUserTie,
   FaBaby,
   FaHeartbeat
 } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
 import { http } from '../api/http.js';
+import BackButton from '../components/BackButton.js';
+import Footer from '../components/Footer.js';
 import "./OrganizationalChart.css";
 
 // --- Reusable Node Component ---
@@ -156,10 +153,7 @@ export default function OrganizationalChart() {
     // Base container for the soft pink background style
     <div className="org-chart-page">
       <div className="org-chart-container">
-        
-        {/* --- Header Area (Logo, Title, Home Button) --- */}
         <header className="org-header">
-          {/* Logo Section */}
           <div className="logo">
             <span className="logo-icon-container">
               {/* Using FaHospitalUser icon for the logo graphic */}
@@ -171,16 +165,14 @@ export default function OrganizationalChart() {
             </div>
           </div>
 
-          {/* Title Section */}
           <div className="header-title">
             <h1 className="org-chart-title">Organizational Chart</h1>
           </div>
-
-          {/* Home Button */}
-          <a href="/dashboard" className="home-btn" aria-label="Home">🏠</a>
         </header>
+        <div style={{ padding: '0 2rem 1rem' }}>
+          <BackButton fallback="/dashboard" />
+        </div>
 
-        {/* --- Chart Layout Wrapper --- */}
         <div className="org-chart-wrapper" style={{ minHeight: '400px' }}>
           <div className="org-chart-scroll">
             {loading ? (
@@ -197,24 +189,7 @@ export default function OrganizationalChart() {
         
       </div>
 
-      {/* --- Footer Area (Contact Info & Socials) --- */}
-      <footer className="org-footer">
-        <div className="footer-left">
-          <FaPhoneAlt className="phone-icon" />
-          <p>24/7 Hotline: 1-800-HEALTH (432584)</p>
-        </div>
-
-        <div className="footer-middle">
-          <FaFacebook className="social-icon" />
-          <FaInstagram className="social-icon" />
-          <FaXTwitter className="social-icon" />
-        </div>
-
-        <div className="footer-right">
-          <FaEnvelope className="mail-icon" />
-          <p>yangconnect@gmail.com</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

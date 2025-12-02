@@ -1,199 +1,142 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/AppLayout.js';
-import { http } from '../../api/http.js';
 
 export default function SystemSettings() {
-  const [settings, setSettings] = useState({
-    siteName: '',
-    siteEmail: '',
-    maintenanceMode: false,
-    maxAppointmentsPerDay: 10,
-    appointmentDuration: 30,
-    allowSelfRegistration: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    setLoading(true);
-    try {
-      // In a real app, this would fetch from an API endpoint
-      // For now, we'll use default values
-      const savedSettings = localStorage.getItem('systemSettings');
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
-      }
-    } catch (err) {
-      console.error('Error loading settings:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleChange = (field, value) => {
-    setSettings((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMessage(null);
-    try {
-      // In a real app, this would save to an API endpoint
-      localStorage.setItem('systemSettings', JSON.stringify(settings));
-      setMessage({ type: 'success', text: 'Settings saved successfully!' });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to save settings: ' + (err.response?.data?.message || err.message) });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <AppLayout>
-        <div style={{ padding: 20 }}>
-          <p>Loading settings...</p>
-        </div>
-      </AppLayout>
-    );
-  }
+  const navigationItems = useMemo(
+    () => [
+      { title: 'System Logs', subtitle: 'Security & audit history', to: '/admin/logs' },
+      { title: 'Appointment Management', subtitle: 'Confirm & manage visits', to: '/admin/appointments' },
+      { title: 'Events', subtitle: 'Hospital-wide announcements', to: '/admin/events' },
+      { title: 'Schedule', subtitle: 'Provider availability grid', to: '/admin/schedule' },
+      { title: 'Organizational Chart', subtitle: 'Teams & reporting lines', to: '/admin/organizational-chart' },
+    ],
+    []
+  );
 
   return (
     <AppLayout>
-      <div style={{ padding: 20 }}>
-        <h2>System Settings</h2>
-        
-        {message && (
+      <div
+        style={{
+          minHeight: 'calc(100vh - 160px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          padding: '32px 16px',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 880,
+            background: 'rgba(255,255,255,0.96)',
+            borderRadius: 28,
+            boxShadow: '0 26px 60px rgba(0,0,0,0.12)',
+            padding: '20px 28px 16px',
+          }}
+        >
+          {/* Header bar */}
           <div
             style={{
-              padding: 12,
-              marginBottom: 20,
-              borderRadius: 8,
-              background: message.type === 'success' ? '#d4edda' : '#f8d7da',
-              color: message.type === 'success' ? '#155724' : '#721c24',
-              border: `1px solid ${message.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
-            }}
-          >
-            {message.text}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.9)',
-              borderRadius: 12,
-              padding: 24,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 12,
             }}
           >
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1a1a1a' }}>
-                Site Name
-              </label>
-              <input
-                type="text"
-                value={settings.siteName}
-                onChange={(e) => handleChange('siteName', e.target.value)}
-                className="input-field"
-                placeholder="Enter site name"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1a1a1a' }}>
-                Site Email
-              </label>
-              <input
-                type="email"
-                value={settings.siteEmail}
-                onChange={(e) => handleChange('siteEmail', e.target.value)}
-                className="input-field"
-                placeholder="admin@example.com"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1a1a1a' }}>
-                Max Appointments Per Day
-              </label>
-              <input
-                type="number"
-                value={settings.maxAppointmentsPerDay}
-                onChange={(e) => handleChange('maxAppointmentsPerDay', parseInt(e.target.value) || 0)}
-                className="input-field"
-                min="1"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1a1a1a' }}>
-                Default Appointment Duration (minutes)
-              </label>
-              <input
-                type="number"
-                value={settings.appointmentDuration}
-                onChange={(e) => handleChange('appointmentDuration', parseInt(e.target.value) || 0)}
-                className="input-field"
-                min="15"
-                step="15"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input
-                type="checkbox"
-                id="maintenanceMode"
-                checked={settings.maintenanceMode}
-                onChange={(e) => handleChange('maintenanceMode', e.target.checked)}
-                style={{ width: 20, height: 20, cursor: 'pointer' }}
-              />
-              <label htmlFor="maintenanceMode" style={{ fontWeight: 600, color: '#1a1a1a', cursor: 'pointer' }}>
-                Maintenance Mode
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input
-                type="checkbox"
-                id="allowSelfRegistration"
-                checked={settings.allowSelfRegistration}
-                onChange={(e) => handleChange('allowSelfRegistration', e.target.checked)}
-                style={{ width: 20, height: 20, cursor: 'pointer' }}
-              />
-              <label htmlFor="allowSelfRegistration" style={{ fontWeight: 600, color: '#1a1a1a', cursor: 'pointer' }}>
-                Allow Self Registration
-              </label>
-            </div>
-
-            <div style={{ marginTop: 8 }}>
-              <button
-                type="submit"
-                className="primary-btn"
-                disabled={saving}
-                style={{ padding: '12px 24px', fontSize: '1rem' }}
-              >
-                {saving ? 'Saving...' : 'Save Settings'}
-              </button>
+            <div style={{ fontSize: 12, color: '#9b8c9f' }}>YangConnect / Admin Portal / System Settings</div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: '#4d3f51', fontSize: 18 }}>
+              <span aria-hidden="true">⚙️</span>
+              <span aria-hidden="true">👤</span>
             </div>
           </div>
-        </form>
+
+          {/* Title strip */}
+          <div
+            style={{
+              borderRadius: 18,
+              background: '#f7f2f5',
+              padding: '10px 18px',
+              marginBottom: 10,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: 14,
+            }}
+          >
+            <span style={{ fontWeight: 600, color: '#4b3a4e' }}>System Settings</span>
+            <span style={{ fontSize: 11, color: '#9b8c9f' }}>Tap a row to open its admin panel</span>
+          </div>
+
+          {/* Settings list */}
+          <div
+            style={{
+              borderRadius: 18,
+              overflow: 'hidden',
+              border: '1px solid #efe1ea',
+              background: '#ffffff',
+            }}
+          >
+            {navigationItems.map((item, index) => (
+              <button
+                key={item.title}
+                type="button"
+                onClick={() => navigate(item.to)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '11px 18px',
+                  border: 'none',
+                  borderBottom:
+                    index === navigationItems.length - 1 ? 'none' : '1px solid rgba(0,0,0,0.04)',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#4b3a4e' }}>{item.title}</div>
+                  <div style={{ fontSize: 11, color: '#a397aa', marginTop: 2 }}>{item.subtitle}</div>
+                </div>
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    border: '1px solid #e0cedb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 14,
+                    color: '#b08aa6',
+                    background: '#faf4f7',
+                  }}
+                >
+                  ›
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Footer strip inside card */}
+          <div
+            style={{
+              marginTop: 10,
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: 10,
+              color: '#a397aa',
+            }}
+          >
+            <span>24/7 Hotline • 1-800-HEALTH (432584)</span>
+            <span>yangconnect-admin@portal.com</span>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
 }
-

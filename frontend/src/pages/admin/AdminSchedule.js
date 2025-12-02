@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import AppLayout from '../../components/AppLayout.js';
+import AdminPageHeader from '../../components/AdminPageHeader.js';
+import useAutoRefresh from '../../hooks/useAutoRefresh.js';
 import { http } from '../../api/http.js';
 
 export default function AdminSchedule() {
@@ -42,22 +44,20 @@ export default function AdminSchedule() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Load providers
       try {
         const { data: providersData } = await http.get('/admin/providers');
         setProviders(Array.isArray(providersData) ? providersData : []);
-        if (providersData.length > 0 && !selectedProvider) {
-          setSelectedProvider(providersData[0].id.toString());
+        if (providersData.length > 0) {
+          setSelectedProvider((prev) => prev || providersData[0].id.toString());
         }
       } catch (err) {
         console.warn('Could not load providers:', err);
         setProviders([]);
       }
 
-      // Load schedules
       try {
         const { data: scheduleData } = await http.get('/admin/schedules');
         setSchedules(Array.isArray(scheduleData) ? scheduleData : []);
@@ -66,19 +66,17 @@ export default function AdminSchedule() {
         setSchedules([]);
       }
 
-      // Load restricted slots (if endpoint exists)
       try {
         const { data: restrictedData } = await http.get('/admin/restricted-slots');
         if (restrictedData && Array.isArray(restrictedData)) {
           const restrictedMap = {};
-          restrictedData.forEach(slot => {
+          restrictedData.forEach((slot) => {
             const key = `${slot.provider_id}-${slot.day_of_week}-${slot.time}`;
             restrictedMap[key] = true;
           });
           setRestrictedSlots(restrictedMap);
         }
       } catch (err) {
-        // Endpoint might not exist yet, that's okay
         console.log('Restricted slots endpoint not available yet');
       }
     } catch (err) {
@@ -86,11 +84,9 @@ export default function AdminSchedule() {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
+
+  const { lastUpdated, isRefreshing, manualRefresh } = useAutoRefresh(loadData, 60000);
 
   const getProviderName = (providerId) => {
     const provider = providers.find(p => p.id === providerId || p.id === parseInt(providerId));
@@ -167,37 +163,44 @@ export default function AdminSchedule() {
     return 'available';
   };
 
+  const refreshDescriptor = lastUpdated
+    ? `Updated • ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Syncing…';
+
   return (
     <AppLayout>
-      <div style={{ padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2>Manage Schedule</h2>
-        </div>
+      <div className="admin-panel">
+        <AdminPageHeader
+          title="Schedule"
+          subtitle="Admin Portal / Schedule"
+          description="Toggle availability across providers and quickly block clinic downtime."
+          actions={
+            <>
+              <div className="refresh-pill">⟳ {isRefreshing ? 'Refreshing…' : refreshDescriptor}</div>
+              <button className="secondary-btn" onClick={manualRefresh}>
+                Refresh
+              </button>
+            </>
+          }
+        />
 
-        {/* Provider Selection */}
-        <div style={{ 
-          background: 'rgba(255,255,255,0.9)', 
-          padding: 20, 
-          borderRadius: 12, 
-          marginBottom: 20,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <label style={{ display: 'block', marginBottom: 10, fontWeight: 600 }}>
-            Select Provider:
+        <div className="admin-panel" style={{ marginTop: 0 }}>
+          <label style={{ display: 'block', fontWeight: 600 }}>
+            Select Provider
             <select
               value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: 10, 
+              onChange={(event) => setSelectedProvider(event.target.value)}
+              style={{
+                width: '100%',
+                padding: 12,
                 marginTop: 8,
                 fontSize: '1rem',
-                borderRadius: 6,
-                border: '1px solid #ddd'
+                borderRadius: 16,
+                border: '1px solid #ddd',
               }}
             >
               <option value="">Select Provider</option>
-              {providers.map(p => (
+              {providers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.full_name || p.fullName} ({p.email})
                 </option>
@@ -207,35 +210,23 @@ export default function AdminSchedule() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center' }}>Loading schedules...</div>
+          <div style={{ padding: 40, textAlign: 'center' }}>Loading schedules…</div>
         ) : !selectedProvider ? (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            padding: 40, 
-            borderRadius: 12, 
-            textAlign: 'center' 
-          }}>
-            <p>Please select a provider to view and manage their schedule.</p>
+          <div className="admin-panel" style={{ marginTop: 16 }}>
+            <p>Select a provider to view and edit their availability.</p>
           </div>
         ) : (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            borderRadius: 12, 
-            padding: 20,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            overflowX: 'auto'
-          }}>
-            <h3 style={{ marginTop: 0, marginBottom: 20 }}>
-              Schedule for {getProviderName(selectedProvider)}
-            </h3>
-            
-            {/* Calendar Grid */}
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: '120px repeat(7, 1fr)',
-              gap: 8,
-              minWidth: '800px'
-            }}>
+          <div className="admin-panel" style={{ marginTop: 16, overflowX: 'auto' }}>
+            <h3 style={{ marginTop: 0 }}>Schedule for {getProviderName(selectedProvider)}</h3>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '120px repeat(7, 1fr)',
+                gap: 8,
+                minWidth: '800px',
+              }}
+            >
               {/* Time column header */}
               <div style={{ 
                 padding: 12, 

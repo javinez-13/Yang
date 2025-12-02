@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.js';
 import useAuth from '../hooks/useAuth.js';
 
@@ -30,7 +30,11 @@ const LoginPage = () => {
   };
 
   return (
-    <AuthLayout helperText="Do not have an account?" helperLink={{ label: 'Sign up', to: '/signup' }}>
+    <AuthLayout
+      helperText="Do not have an account?"
+      helperLink={{ label: 'Sign up', to: '/signup' }}
+      showBackButton={false}
+    >
       <div>
         <h2 style={{ margin: '0 0 0.35rem' }}>Already have an Account?</h2>
         <p style={{ margin: 0, color: '#5f5365' }}>Sign in to access the YangConnect health portal.</p>
@@ -56,6 +60,11 @@ const LoginPage = () => {
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
             required
           />
+          <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+            <Link to="/forgot-password" style={{ color: '#1a8bc1', fontWeight: 600, textDecoration: 'none' }}>
+              Forgot password?
+            </Link>
+          </div>
         </label>
         <label className="checkbox-row">
           <input type="checkbox" checked={form.agree} onChange={(e) => setForm((prev) => ({ ...prev, agree: e.target.checked }))} />

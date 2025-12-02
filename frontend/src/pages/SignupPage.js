@@ -50,7 +50,11 @@ const SignupPage = () => {
   };
 
   return (
-    <AuthLayout helperText="Already registered?" helperLink={{ label: 'Log in', to: '/login' }}>
+    <AuthLayout
+      helperText="Already registered?"
+      helperLink={{ label: 'Log in', to: '/login' }}
+      backFallback="/login"
+    >
       <div>
         <h2 style={{ margin: '0 0 0.35rem' }}>Create Your Account</h2>
         <p style={{ margin: 0, color: '#5f5365' }}>Complete the form to access the YangConnect health portal.</p>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout.js';
 import useAuth from '../hooks/useAuth.js';
 
@@ -12,6 +12,12 @@ const AdminLogin = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!form.agree) {
+      setError('Please agree to the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
+
     try {
       setError(null);
       setSubmitting(true);
@@ -28,17 +34,21 @@ const AdminLogin = () => {
   };
 
   return (
-    <AuthLayout helperText="Back to user login" helperLink={{ label: 'User Login', to: '/login' }}>
+    <AuthLayout
+      helperText="Back to user login"
+      helperLink={{ label: 'User Login', to: '/login' }}
+      showBackButton={false}
+    >
       <div>
-        <h2 style={{ margin: '0 0 0.35rem' }}>Admin Sign In</h2>
-        <p style={{ margin: 0, color: '#5f5365' }}>Sign in with your admin account to manage the portal.</p>
+        <h2 style={{ margin: '0 0 0.35rem' }}>Log in as Admin</h2>
+        <p style={{ margin: 0, color: '#5f5365' }}>Use your administrator credentials to access the portal.</p>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <label>
           <input
             className="input-field"
-            placeholder="Admin Email"
+            placeholder="Email Address"
             type="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
@@ -54,17 +64,27 @@ const AdminLogin = () => {
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
             required
           />
+          <div style={{ marginTop: '0.5rem', textAlign: 'right' }}>
+            <Link to="/forgot-password" style={{ color: '#1a8bc1', fontWeight: 600, textDecoration: 'none' }}>
+              Forgot password?
+            </Link>
+          </div>
+        </label>
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={form.agree}
+            onChange={(e) => setForm((prev) => ({ ...prev, agree: e.target.checked }))}
+          />
+          <span>I agree the Terms of Service and Privacy Policy</span>
         </label>
         {error && (
           <div style={{ color: '#c0392b', fontWeight: 600 }}>{error}</div>
         )}
         <div className="dual-actions">
           <button type="submit" className="primary-btn" disabled={submitting} style={{ flex: 1 }}>
-            {submitting ? 'Signing in…' : 'Admin Log In'}
+            {submitting ? 'Signing in…' : 'Log In'}
           </button>
-        </div>
-        <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
-          Tip: Use email <strong>admin@yangconnect.com</strong> and password <strong>admin1234</strong> for the seeded admin account.
         </div>
       </form>
     </AuthLayout>

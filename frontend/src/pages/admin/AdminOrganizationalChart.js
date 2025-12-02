@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AppLayout from '../../components/AppLayout.js';
+import AdminPageHeader from '../../components/AdminPageHeader.js';
+import useAutoRefresh from '../../hooks/useAutoRefresh.js';
 import { http } from '../../api/http.js';
 import {
   FaUserMd,
@@ -94,7 +96,7 @@ export default function AdminOrganizationalChart() {
     parent_id: ''
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await http.get('/admin/org-chart');
@@ -105,11 +107,13 @@ export default function AdminOrganizationalChart() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const { lastUpdated, isRefreshing, manualRefresh } = useAutoRefresh(loadData, 60000);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -246,73 +250,85 @@ export default function AdminOrganizationalChart() {
     );
   };
 
+  const refreshDescriptor = lastUpdated
+    ? `Updated • ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Syncing…';
+
   return (
     <AppLayout>
-      <div style={{ padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2>Manage Organizational Chart</h2>
-          <button 
-            className="primary-btn" 
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-              setFormData({ name: '', description: '', parent_id: '' });
-            }}
-          >
-            Add Unit
-          </button>
-        </div>
+      <div className="admin-panel">
+        <AdminPageHeader
+          title="Organizational Chart"
+          subtitle="Admin Portal / Organizational Chart"
+          description="Visualize clinical leadership, support teams and operational pods."
+          actions={
+            <>
+              <div className="refresh-pill">⟳ {isRefreshing ? 'Refreshing…' : refreshDescriptor}</div>
+              <button className="secondary-btn" onClick={manualRefresh}>
+                Refresh
+              </button>
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                  setFormData({ name: '', description: '', parent_id: '' });
+                }}
+              >
+                Add unit
+              </button>
+            </>
+          }
+        />
 
         {showForm && (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.9)', 
-            padding: 20, 
-            borderRadius: 12, 
-            marginBottom: 20,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            <h3>{editingId ? 'Edit' : 'Add'} Organizational Unit</h3>
+          <div className="admin-panel" style={{ marginTop: 0 }}>
+            <h3 style={{ marginTop: 0 }}>{editingId ? 'Edit unit' : 'Add new unit'}</h3>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label>
-                Name:
+                Name
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                   required
                   placeholder="e.g., Chief of Medicine"
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  className="input-field"
                 />
               </label>
               <label>
-                Description:
+                Description
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                   placeholder="e.g., Clinical Director"
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  className="input-field"
                 />
               </label>
               <label>
-                Parent Unit (optional):
+                Parent Unit (optional)
                 <select
                   value={formData.parent_id}
-                  onChange={(e) => setFormData({ ...formData, parent_id: e.target.value })}
-                  style={{ width: '100%', padding: 8, marginTop: 4 }}
+                  onChange={(event) => setFormData({ ...formData, parent_id: event.target.value })}
+                  className="input-field"
                 >
                   <option value="">None (Root Level)</option>
                   {orgUnits
-                    .filter(u => !editingId || u.id !== parseInt(editingId))
-                    .map(u => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
+                    .filter((unit) => !editingId || unit.id !== parseInt(editingId, 10))
+                    .map((unit) => (
+                      <option key={unit.id} value={unit.id}>
+                        {unit.name}
+                      </option>
                     ))}
                 </select>
               </label>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="submit" className="primary-btn">Save</button>
-                <button 
-                  type="button" 
+                <button type="submit" className="primary-btn">
+                  Save
+                </button>
+                <button
+                  type="button"
                   className="secondary-btn"
                   onClick={() => {
                     setShowForm(false);
@@ -327,34 +343,28 @@ export default function AdminOrganizationalChart() {
           </div>
         )}
 
-        <div style={{ 
-          background: 'rgba(255,255,255,0.9)', 
-          borderRadius: 12, 
-          padding: 20,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          minHeight: '400px'
-        }}>
+        <div className="admin-panel" style={{ marginTop: 16 }}>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading organizational chart...</div>
+            <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>Loading organizational chart…</div>
           ) : orgUnits.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: '#666' }}>
               <p>No organizational chart data available. Add a unit to get started.</p>
             </div>
           ) : (
-            <div style={{ 
-              background: '#f7f3f5',
-              borderRadius: 30,
-              padding: '4rem 2rem',
-              boxShadow: '0 40px 70px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              overflowX: 'auto',
-              minHeight: '300px'
-            }}>
-              <div style={{ overflowX: 'auto', paddingBottom: '1rem', width: '100%' }}>
-                {buildHierarchy()}
-              </div>
+            <div
+              style={{
+                background: '#f7f3f5',
+                borderRadius: 30,
+                padding: '4rem 2rem',
+                boxShadow: '0 40px 70px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                overflowX: 'auto',
+                minHeight: '300px',
+              }}
+            >
+              <div style={{ overflowX: 'auto', paddingBottom: '1rem', width: '100%' }}>{buildHierarchy()}</div>
             </div>
           )}
         </div>

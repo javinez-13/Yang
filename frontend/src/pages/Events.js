@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaHospitalUser, FaNewspaper, FaMicrophoneAlt, FaSyringe, FaHandsHelping,
-  FaPhoneAlt, FaFacebook, FaInstagram, FaEnvelope, FaMapPin, FaRegCalendarCheck,
-  FaChevronLeft, FaChevronRight // New imports for cleaner nav buttons
+  FaMapPin, FaRegCalendarCheck, FaChevronLeft, FaChevronRight
 } from "react-icons/fa";
-import { FaXTwitter } from "react-icons/fa6";
 import { http } from '../api/http.js';
+import BackButton from '../components/BackButton.js';
+import Footer from '../components/Footer.js';
 import "./Events.css";
 
 // --- Helper: Calendar Component ---
@@ -131,7 +131,6 @@ export default function Events() {
 
   return (
     <div className="events-page-container">
-      {/* Header */}
       <header className="events-header">
         <div className="logo">
           <span className="logo-icon-container">
@@ -147,11 +146,11 @@ export default function Events() {
           <FaNewspaper className="title-icon" />
           <h1>Events</h1>
         </div>
-
-        <a href="/dashboard" className="home-btn" aria-label="Home">🏠</a>
       </header>
+      <div style={{ padding: '0 2rem 1rem' }}>
+        <BackButton fallback="/dashboard" />
+      </div>
 
-      {/* Main Content Area */}
       <main className="events-main-content">
         
         {/* Left Column: Event Filters */}
@@ -223,24 +222,7 @@ export default function Events() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="events-footer">
-        <div className="footer-left">
-          <FaPhoneAlt className="phone-icon" />
-          <p>24/7 Hotline: 1-800-HEALTH (432584)</p>
-        </div>
-
-        <div className="footer-middle">
-          <FaFacebook className="social-icon" />
-          <FaInstagram className="social-icon" />
-          <FaXTwitter className="social-icon" />
-        </div>
-
-        <div className="footer-right">
-          <FaEnvelope className="mail-icon" />
-          <p>yangconnect@gmail.com</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

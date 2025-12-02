@@ -1,114 +1,36 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../../components/AppLayout.js';
+import AdminPageHeader from '../../components/AdminPageHeader.js';
 
 export default function AdminDashboard() {
+  const tiles = [
+    { label: 'Manage Events', description: 'Create and publish programs', to: '/admin/events' },
+    { label: 'Manage Schedule', description: 'Adjust provider availability', to: '/admin/schedule' },
+    { label: 'Appointment Management', description: 'Triage and confirm visits', to: '/admin/appointments' },
+    { label: 'System Logs', description: 'Audit sign-ins & changes', to: '/admin/logs' },
+    { label: 'System Settings', description: 'Branding & platform controls', to: '/admin/settings' },
+    { label: 'Organizational Chart', description: 'Keep teams aligned', to: '/admin/organizational-chart' },
+  ];
+
   return (
     <AppLayout>
-      <div style={{ padding: 20 }}>
-        <h2>Admin Dashboard</h2>
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: 16, 
-          marginTop: 20 
-        }}>
-          <Link 
-            to="/admin/events" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>Manage Events</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Create and manage events</p>
-          </Link>
-          <Link 
-            to="/admin/schedule" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>Manage Schedule</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Manage provider schedules</p>
-          </Link>
-          <Link 
-            to="/admin/appointments" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>Appointment Records</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>View all appointments</p>
-          </Link>
-          <Link 
-            to="/admin/logs" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>System Logs</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>View system activity logs</p>
-          </Link>
-          <Link 
-            to="/admin/organizational-chart" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>Organizational Chart</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Manage organizational structure</p>
-          </Link>
-          <Link 
-            to="/admin/settings" 
-            style={{ 
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.9)',
-              padding: 20,
-              borderRadius: 12,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-          >
-            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>System Settings</h3>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Configure system preferences</p>
-          </Link>
+      <div className="admin-panel">
+        <AdminPageHeader
+          title="Admin Portal"
+          subtitle="YangConnect • Admin Portal"
+          description="High-level access to appointments, schedules, events and audit history."
+        />
+        <div className="admin-card-grid">
+          {tiles.map((tile) => (
+            <Link key={tile.label} to={tile.to} className="admin-card-link">
+              <div>
+                <strong>{tile.label}</strong>
+                <small>{tile.description}</small>
+              </div>
+              <span aria-hidden="true">↗</span>
+            </Link>
+          ))}
         </div>
       </div>
     </AppLayout>
