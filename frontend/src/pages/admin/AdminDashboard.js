@@ -93,6 +93,22 @@ export default function AdminDashboard() {
             <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>Organizational Chart</h3>
             <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Manage organizational structure</p>
           </Link>
+          <Link 
+            to="/admin/settings" 
+            style={{ 
+              textDecoration: 'none',
+              background: 'rgba(255,255,255,0.9)',
+              padding: 20,
+              borderRadius: 12,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+          >
+            <h3 style={{ margin: '0 0 8px 0', color: '#1a1a1a' }}>System Settings</h3>
+            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>Configure system preferences</p>
+          </Link>
         </div>
       </div>
     </AppLayout>

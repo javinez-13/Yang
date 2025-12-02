@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import ProfilePage from './pages/ProfilePage.js';
 import ProtectedRoute from './components/ProtectedRoute.js';
+import GuestRoute from './components/GuestRoute.js';
 import OrganizationalChart from "./pages/OrganizationalChart";
 import Events from './pages/Events.js';
 import Schedule from './pages/Schedule.js';
@@ -19,6 +20,7 @@ import AdminAppointments from './pages/admin/AdminAppointments.js';
 import AdminLogs from './pages/admin/AdminLogs.js';
 import AdminOrganizationalChart from './pages/admin/AdminOrganizationalChart.js';
 import AdminLogin from './pages/AdminLogin.js';
+import SystemSettings from './pages/admin/SystemSettings.js';
 
 function App() {
   return (
@@ -26,8 +28,22 @@ function App() {
     <div className="gradient-bg">
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/login"
+          element={
+            <GuestRoute>
+              <LoginPage />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <GuestRoute>
+              <SignupPage />
+            </GuestRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
@@ -92,7 +108,14 @@ function App() {
           </AdminRoute>
         }
       />
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/login"
+          element={
+            <GuestRoute>
+              <AdminLogin />
+            </GuestRoute>
+          }
+        />
       <Route
         path="/admin/events"
         element={
@@ -130,6 +153,14 @@ function App() {
         element={
           <AdminRoute>
             <AdminLogs />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <AdminRoute>
+            <SystemSettings />
           </AdminRoute>
         }
       />
