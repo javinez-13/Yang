@@ -7,10 +7,6 @@ const AdminPageHeader = ({ title, subtitle = 'YangConnect • Admin Portal', des
     </div>
     <div className="admin-page-actions">
       {actions}
-      <div className="admin-icons" aria-hidden="true">
-        <span>🔔</span>
-        <span>⚙️</span>
-      </div>
     </div>
   </div>
 );

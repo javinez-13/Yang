@@ -22,6 +22,14 @@ router.get('/my-appointments', async (req: Request, res: Response) => {
   res.json(appointments);
 });
 
+// Admin: get all appointments across patients and providers
+// NOTE: This endpoint is authenticated but does not yet restrict by role.
+// It is intended to be used from the Admin Portal UI.
+router.get('/all', async (_req: Request, res: Response) => {
+  const appointments = await appointmentRepo.fetchAll();
+  res.json(appointments);
+});
+
 // Create new appointment
 router.post('/', async (req: Request, res: Response) => {
   const userId = req.userId;
@@ -69,6 +77,24 @@ router.post('/', async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Error creating appointment:', err);
     res.status(400).json({ message: err.message || 'Failed to create appointment' });
+  }
+});
+
+// Update appointment status (e.g., pending → confirmed / completed / cancelled)
+router.patch('/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ message: 'Missing status in request body' });
+  }
+
+  try {
+    const updated = await appointmentRepo.updateStatus(id, status);
+    res.json(updated);
+  } catch (err: any) {
+    console.error('Error updating appointment status:', err);
+    res.status(400).json({ message: err.message || 'Failed to update status' });
   }
 });
 

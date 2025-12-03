@@ -23,8 +23,6 @@ const AuthLayout = ({
           </div>
         </div>
         <div className="auth-meta">
-          <div className="meta-chip">24/7 Care Desk • 1-800-432-2584</div>
-          <div className="meta-chip">support@yangconnect.com</div>
         </div>
         {primaryCta ?? (
           <Link

@@ -1,86 +1,34 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import AppLayout from '../../components/AppLayout.js';
 import AdminPageHeader from '../../components/AdminPageHeader.js';
 import useAutoRefresh from '../../hooks/useAutoRefresh.js';
 import { http } from '../../api/http.js';
 
 export default function AdminSchedule() {
-  const [schedules, setSchedules] = useState([]);
-  const [providers, setProviders] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProvider, setSelectedProvider] = useState('');
-  const [restrictedSlots, setRestrictedSlots] = useState({}); // { "provider-day-time": true }
-
-  const daysOfWeek = [
-    { value: 0, label: 'Sunday', short: 'Sun' },
-    { value: 1, label: 'Monday', short: 'Mon' },
-    { value: 2, label: 'Tuesday', short: 'Tue' },
-    { value: 3, label: 'Wednesday', short: 'Wed' },
-    { value: 4, label: 'Thursday', short: 'Thu' },
-    { value: 5, label: 'Friday', short: 'Fri' },
-    { value: 6, label: 'Saturday', short: 'Sat' }
-  ];
-
-  // Generate time slots (30-minute intervals from 8:00 AM to 6:00 PM)
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 8; hour < 18; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        const displayTime = formatTime(timeStr);
-        slots.push({ time: timeStr, display: displayTime });
-      }
-    }
-    return slots;
-  };
-
-  const timeSlots = generateTimeSlots();
+  const [savingStatusId, setSavingStatusId] = useState(null);
+  const [editingStatusId, setEditingStatusId] = useState(null);
+  const [editingStatusValue, setEditingStatusValue] = useState('pending');
 
   const formatTime = (timeStr) => {
-    const [hours, minutes] = timeStr.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    if (!timeStr) return '';
+    const [rawHours, rawMinutes] = timeStr.split(':');
+    const hours = parseInt(rawHours, 10);
+    const minutes = rawMinutes ?? '00';
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours % 12 || 12;
+    return `${displayHour}:${minutes.padStart(2, '0')} ${ampm}`;
   };
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      try {
-        const { data: providersData } = await http.get('/admin/providers');
-        setProviders(Array.isArray(providersData) ? providersData : []);
-        if (providersData.length > 0) {
-          setSelectedProvider((prev) => prev || providersData[0].id.toString());
-        }
-      } catch (err) {
-        console.warn('Could not load providers:', err);
-        setProviders([]);
-      }
-
-      try {
-        const { data: scheduleData } = await http.get('/admin/schedules');
-        setSchedules(Array.isArray(scheduleData) ? scheduleData : []);
-      } catch (err) {
-        console.warn('Could not load schedules:', err);
-        setSchedules([]);
-      }
-
-      try {
-        const { data: restrictedData } = await http.get('/admin/restricted-slots');
-        if (restrictedData && Array.isArray(restrictedData)) {
-          const restrictedMap = {};
-          restrictedData.forEach((slot) => {
-            const key = `${slot.provider_id}-${slot.day_of_week}-${slot.time}`;
-            restrictedMap[key] = true;
-          });
-          setRestrictedSlots(restrictedMap);
-        }
-      } catch (err) {
-        console.log('Restricted slots endpoint not available yet');
-      }
+      const { data } = await http.get('/appointments/all');
+      setAppointments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error loading data:', err);
+      console.error('Error loading appointments for admin schedule:', err);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
@@ -88,84 +36,102 @@ export default function AdminSchedule() {
 
   const { lastUpdated, isRefreshing, manualRefresh } = useAutoRefresh(loadData, 60000);
 
-  const getProviderName = (providerId) => {
-    const provider = providers.find(p => p.id === providerId || p.id === parseInt(providerId));
-    return provider ? (provider.full_name || provider.fullName) : `Provider #${providerId}`;
-  };
-
-  // Get schedules for selected provider and day
-  const getScheduleForDay = (dayValue) => {
-    if (!selectedProvider) return null;
-    return schedules.find(s => 
-      s.provider_id === parseInt(selectedProvider) && 
-      s.day_of_week === dayValue
-    );
-  };
-
-  // Check if a time slot is within the schedule range
-  const isTimeInSchedule = (time, schedule) => {
-    if (!schedule) return false;
-    const [timeHour, timeMin] = time.split(':').map(Number);
-    const [startHour, startMin] = schedule.start_time.split(':').map(Number);
-    const [endHour, endMin] = schedule.end_time.split(':').map(Number);
-    
-    const timeMinutes = timeHour * 60 + timeMin;
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    
-    return timeMinutes >= startMinutes && timeMinutes < endMinutes;
-  };
-
-  // Check if a time slot is restricted
-  const isSlotRestricted = (dayValue, time) => {
-    if (!selectedProvider) return false;
-    const key = `${selectedProvider}-${dayValue}-${time}`;
-    return restrictedSlots[key] === true;
-  };
-
-  // Toggle slot restriction
-  const toggleSlotRestriction = async (dayValue, time) => {
-    if (!selectedProvider) {
-      alert('Please select a provider first');
-      return;
-    }
-
-    const key = `${selectedProvider}-${dayValue}-${time}`;
-    const isRestricted = restrictedSlots[key] === true;
-    const newRestrictedSlots = { ...restrictedSlots };
-
-    try {
-      if (isRestricted) {
-        // Remove restriction
-        delete newRestrictedSlots[key];
-        await http.delete(`/admin/restricted-slots/${selectedProvider}/${dayValue}/${time}`);
-      } else {
-        // Add restriction
-        newRestrictedSlots[key] = true;
-        await http.post('/admin/restricted-slots', {
-          provider_id: parseInt(selectedProvider),
-          day_of_week: dayValue,
-          time: time
-        });
-      }
-      setRestrictedSlots(newRestrictedSlots);
-    } catch (err) {
-      console.error('Error toggling slot restriction:', err);
-      alert('Error updating slot: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const getSlotStatus = (dayValue, time) => {
-    const schedule = getScheduleForDay(dayValue);
-    if (!schedule) return 'no-schedule';
-    if (!isTimeInSchedule(time, schedule)) return 'outside';
-    if (isSlotRestricted(dayValue, time)) return 'restricted';
-    return 'available';
-  };
-
   const refreshDescriptor = lastUpdated
     ? `Updated • ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     : 'Syncing…';
+
+  const parseDateTime = (appointment) => {
+    if (!appointment?.appointment_date || !appointment?.appointment_time) return null;
+    const time = appointment.appointment_time.length === 5
+      ? `${appointment.appointment_time}:00`
+      : appointment.appointment_time;
+    return new Date(`${appointment.appointment_date}T${time}`);
+  };
+
+  const todaySummary = useMemo(() => {
+    const now = new Date();
+
+    const withDate = appointments
+      .map((appt) => ({ ...appt, _dt: parseDateTime(appt) }))
+      .filter(
+        (appt) =>
+          appt._dt instanceof Date &&
+          !Number.isNaN(appt._dt.getTime()),
+      )
+      .sort((a, b) => a._dt.getTime() - b._dt.getTime());
+
+    let previous = 0;
+    let current = 0;
+    let upcoming = 0;
+
+    const THIRTY_MIN = 30 * 60 * 1000;
+
+    withDate.forEach((appt) => {
+      const diff = appt._dt.getTime() - now.getTime();
+      if (diff < -THIRTY_MIN) {
+        previous += 1;
+      } else if (Math.abs(diff) <= THIRTY_MIN) {
+        current += 1;
+      } else {
+        upcoming += 1;
+      }
+    });
+
+    return {
+      previous,
+      current,
+      upcoming,
+      list: withDate,
+    };
+  }, [appointments]);
+
+  const getStatusLabelAndColor = (appt) => {
+    const now = new Date();
+    const dt = parseDateTime(appt);
+    if (!dt) return { label: appt.status || 'Unknown', color: '#7f8c8d' };
+
+    const THIRTY_MIN = 30 * 60 * 1000;
+    const diff = dt.getTime() - now.getTime();
+
+    if (diff < -THIRTY_MIN) {
+      return { label: 'Previous', color: '#7f8c8d' };
+    }
+    if (Math.abs(diff) <= THIRTY_MIN) {
+      return { label: 'Current', color: '#27ae60' };
+    }
+    return { label: 'Upcoming', color: '#2980b9' };
+  };
+
+  const startEditingStatus = (appt) => {
+    setEditingStatusId(appt.id);
+    setEditingStatusValue(appt.status || 'pending');
+  };
+
+  const cancelEditingStatus = () => {
+    setEditingStatusId(null);
+    setEditingStatusValue('pending');
+  };
+
+  const saveStatus = async () => {
+    if (!editingStatusId) return;
+    setSavingStatusId(editingStatusId);
+    try {
+      const { data } = await http.patch(`/appointments/${editingStatusId}/status`, {
+        status: editingStatusValue,
+      });
+      setAppointments((prev) =>
+        prev.map((appt) => (appt.id === data.id ? { ...appt, ...data } : appt)),
+      );
+      cancelEditingStatus();
+    } catch (err) {
+      console.error('Error updating appointment status:', err);
+      alert('Error updating status: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSavingStatusId(null);
+    }
+  };
+
+  const statusOptions = ['pending', 'confirmed', 'completed', 'cancelled'];
 
   return (
     <AppLayout>
@@ -173,179 +139,199 @@ export default function AdminSchedule() {
         <AdminPageHeader
           title="Schedule"
           subtitle="Admin Portal / Schedule"
-          description="Toggle availability across providers and quickly block clinic downtime."
+          description="View all patient appointments in real-time and quickly manage the schedule."
           actions={
             <>
               <div className="refresh-pill">⟳ {isRefreshing ? 'Refreshing…' : refreshDescriptor}</div>
               <button className="secondary-btn" onClick={manualRefresh}>
                 Refresh
               </button>
+              <button className="primary-btn" style={{ marginLeft: 8 }}>
+                Edit Schedule
+              </button>
             </>
           }
         />
 
         <div className="admin-panel" style={{ marginTop: 0 }}>
-          <label style={{ display: 'block', fontWeight: 600 }}>
-            Select Provider
-            <select
-              value={selectedProvider}
-              onChange={(event) => setSelectedProvider(event.target.value)}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}
+          >
+            <div>
+              <button
+                className="secondary-btn"
+                style={{
+                  borderRadius: 999,
+                  paddingInline: 24,
+                  background: '#eef5ff',
+                  color: '#222',
+                }}
+              >
+                Today
+              </button>
+            </div>
+            <div
               style={{
-                width: '100%',
-                padding: 12,
-                marginTop: 8,
-                fontSize: '1rem',
-                borderRadius: 16,
-                border: '1px solid #ddd',
+                display: 'flex',
+                gap: 16,
+                fontSize: '0.9rem',
               }}
             >
-              <option value="">Select Provider</option>
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.full_name || p.fullName} ({p.email})
-                </option>
-              ))}
-            </select>
-          </label>
+              <div>
+                <strong>Previous</strong>: {todaySummary.previous}
+              </div>
+              <div>
+                <strong>Current</strong>: {todaySummary.current}
+              </div>
+              <div>
+                <strong>Upcoming</strong>: {todaySummary.upcoming}
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center' }}>Loading schedules…</div>
-        ) : !selectedProvider ? (
+          <div style={{ padding: 40, textAlign: 'center' }}>Loading schedule…</div>
+        ) : todaySummary.list.length === 0 ? (
           <div className="admin-panel" style={{ marginTop: 16 }}>
-            <p>Select a provider to view and edit their availability.</p>
+            <p>No appointments scheduled.</p>
           </div>
         ) : (
-          <div className="admin-panel" style={{ marginTop: 16, overflowX: 'auto' }}>
-            <h3 style={{ marginTop: 0 }}>Schedule for {getProviderName(selectedProvider)}</h3>
-
+          <div className="admin-panel" style={{ marginTop: 16 }}>
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: '120px repeat(7, 1fr)',
-                gap: 8,
-                minWidth: '800px',
+                overflowX: 'auto',
               }}
             >
-              {/* Time column header */}
-              <div style={{ 
-                padding: 12, 
-                background: '#f5f5f5', 
-                fontWeight: 600,
-                textAlign: 'center',
-                border: '1px solid #ddd',
-                borderRadius: 6
-              }}>
-                Time
-              </div>
-              
-              {/* Day headers */}
-              {daysOfWeek.map(day => (
-                <div key={day.value} style={{ 
-                  padding: 12, 
-                  background: '#f5f5f5', 
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  border: '1px solid #ddd',
-                  borderRadius: 6
-                }}>
-                  <div>{day.short}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#666', marginTop: 4 }}>
-                    {getScheduleForDay(day.value) 
-                      ? `${getScheduleForDay(day.value).start_time} - ${getScheduleForDay(day.value).end_time}`
-                      : 'No schedule'
-                    }
-                  </div>
-                </div>
-              ))}
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  minWidth: 600,
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: '#fdf4f7',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <th style={{ padding: 12, fontWeight: 600 }}>Time</th>
+                    <th style={{ padding: 12, fontWeight: 600 }}>Patient</th>
+                    <th style={{ padding: 12, fontWeight: 600 }}>Doctor</th>
+                    <th style={{ padding: 12, fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: 12, fontWeight: 600 }}>When</th>
+                    <th style={{ padding: 12, fontWeight: 600, textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todaySummary.list.map((appt, index) => {
+                    const dt = parseDateTime(appt);
+                    const { label, color } = getStatusLabelAndColor(appt);
+                    const isEditing = editingStatusId === appt.id;
 
-              {/* Time slots */}
-              {timeSlots.map((slot, idx) => (
-                <React.Fragment key={slot.time}>
-                  {/* Time label */}
-                  <div style={{ 
-                    padding: 8, 
-                    background: idx % 2 === 0 ? '#fafafa' : 'white',
-                    textAlign: 'right',
-                    fontSize: '0.85rem',
-                    color: '#666',
-                    border: '1px solid #eee',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end'
-                  }}>
-                    {slot.display}
-                  </div>
-                  
-                  {/* Day cells */}
-                  {daysOfWeek.map(day => {
-                    const status = getSlotStatus(day.value, slot.time);
-                    const isClickable = status === 'available' || status === 'restricted';
-                    
                     return (
-                      <div
-                        key={`${day.value}-${slot.time}`}
-                        onClick={() => isClickable && toggleSlotRestriction(day.value, slot.time)}
+                      <tr
+                        key={appt.id || index}
                         style={{
-                          padding: 8,
-                          background: 
-                            status === 'restricted' ? '#e74c3c' :
-                            status === 'available' ? '#27ae60' :
-                            status === 'outside' ? '#ecf0f1' :
-                            '#bdc3c7',
-                          color: status === 'restricted' || status === 'available' ? 'white' : '#666',
-                          textAlign: 'center',
-                          fontSize: '0.75rem',
-                          border: '1px solid #ddd',
-                          cursor: isClickable ? 'pointer' : 'default',
-                          transition: 'all 0.2s',
-                          opacity: status === 'no-schedule' ? 0.5 : 1,
-                          position: 'relative'
+                          borderTop: '1px solid #f0e4ea',
+                          background: index % 2 === 0 ? 'white' : '#fffafc',
                         }}
-                        title={
-                          status === 'restricted' ? 'Click to make available' :
-                          status === 'available' ? 'Click to restrict' :
-                          status === 'outside' ? 'Outside schedule hours' :
-                          'No schedule for this day'
-                        }
                       >
-                        {status === 'restricted' && '🚫'}
-                        {status === 'available' && '✓'}
-                        {status === 'outside' && '—'}
-                        {status === 'no-schedule' && '○'}
-                      </div>
+                        <td style={{ padding: 12, whiteSpace: 'nowrap' }}>
+                          {dt ? formatTime(dt.toTimeString().slice(0, 5)) : '—'}
+                        </td>
+                        <td style={{ padding: 12 }}>{appt.patient_name || appt.patientName || '—'}</td>
+                        <td style={{ padding: 12 }}>{appt.provider_name || appt.providerName || '—'}</td>
+                        <td style={{ padding: 12 }}>
+                          {isEditing ? (
+                            <select
+                              value={editingStatusValue}
+                              onChange={(e) => setEditingStatusValue(e.target.value)}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 999,
+                                border: '1px solid #ddd',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {statusOptions.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '4px 10px',
+                                borderRadius: 999,
+                                background: '#eef2ff',
+                                fontSize: '0.8rem',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {appt.status || 'pending'}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: 12 }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              padding: '4px 12px',
+                              borderRadius: 999,
+                              background: color,
+                              color: 'white',
+                              fontSize: '0.78rem',
+                            }}
+                          >
+                            {label}
+                          </span>
+                        </td>
+                        <td style={{ padding: 12, textAlign: 'right' }}>
+                          {isEditing ? (
+                            <>
+                              <button
+                                className="secondary-btn"
+                                onClick={cancelEditingStatus}
+                                style={{ marginRight: 8 }}
+                                disabled={savingStatusId === appt.id}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                className="primary-btn"
+                                onClick={saveStatus}
+                                disabled={savingStatusId === appt.id}
+                              >
+                                {savingStatusId === appt.id ? 'Saving…' : 'Save'}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              className="secondary-btn"
+                              onClick={() => startEditingStatus(appt)}
+                            >
+                              Edit
+                            </button>
+                          )}
+                        </td>
+                      </tr>
                     );
                   })}
-                </React.Fragment>
-              ))}
-            </div>
-
-            {/* Legend */}
-            <div style={{ 
-              marginTop: 20, 
-              padding: 15, 
-              background: '#f9f9f9', 
-              borderRadius: 6,
-              display: 'flex',
-              gap: 20,
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 20, height: 20, background: '#27ae60', borderRadius: 4 }}></div>
-                <span style={{ fontSize: '0.9rem' }}>Available (click to restrict)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 20, height: 20, background: '#e74c3c', borderRadius: 4 }}></div>
-                <span style={{ fontSize: '0.9rem' }}>Restricted (click to make available)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 20, height: 20, background: '#ecf0f1', borderRadius: 4 }}></div>
-                <span style={{ fontSize: '0.9rem' }}>Outside schedule hours</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 20, height: 20, background: '#bdc3c7', borderRadius: 4, opacity: 0.5 }}></div>
-                <span style={{ fontSize: '0.9rem' }}>No schedule for this day</span>
-              </div>
+                </tbody>
+              </table>
             </div>
           </div>
         )}

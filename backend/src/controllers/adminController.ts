@@ -44,6 +44,11 @@ export const getLogs = async (req: Request, res: Response) => {
   res.json(logs);
 };
 
+export const clearLogs = async (_req: Request, res: Response) => {
+  await adminService.clearLogs();
+  res.status(204).send();
+};
+
 // Organizational Chart
 export const getOrgUnits = async (_req: Request, res: Response) => {
   const units = await adminService.listOrgUnits();

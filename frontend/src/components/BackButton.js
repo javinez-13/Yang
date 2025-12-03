@@ -14,7 +14,7 @@ const BackButton = ({ fallback = '/dashboard', label = 'Back' }) => {
   return (
     <button className="back-btn" onClick={handleClick} aria-label="Go back">
       <span aria-hidden="true">←</span>
-      {label}
+      <span className="back-btn-label">{label}</span>
     </button>
   );
 };

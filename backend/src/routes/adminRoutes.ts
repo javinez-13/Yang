@@ -7,6 +7,7 @@ import {
   listAppointments,
   updateAppointmentStatus,
   getLogs,
+  clearLogs,
   getOrgUnits,
   createOrgUnit,
   updateOrgUnit,
@@ -40,6 +41,7 @@ router.put('/appointments/:id/status', updateAppointmentStatus);
 
 // logs
 router.get('/logs', getLogs);
+router.delete('/logs', clearLogs);
 
 // organizational chart
 router.get('/org-chart', getOrgUnits);

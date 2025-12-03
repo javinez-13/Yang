@@ -383,25 +383,33 @@
   --yang-rose-dark: #d995aa;
   --yang-slate: #433240;
   --yang-navy: #1f5672;
-  --yang-soft-white: rgba(255, 255, 255, 0.96);
+  --yang-soft-white: #fff7fb;
 }
 
 .back-btn {
-  background: transparent;
-  border: none;
-  color: #1f5672;
+  background: #ffe5ed;
+  border: 1px solid #f3b5c3;
+  color: #a83652;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   cursor: pointer;
-  padding: 0.35rem 0;
+  padding: 0.4rem 0.9rem;
   font-size: 0.95rem;
-  transition: opacity 0.2s ease;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  background-clip: padding-box;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .back-btn:hover {
-  opacity: 0.7;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.back-btn-label {
+  letter-spacing: 0.02em;
 }
 
 .admin-panel {

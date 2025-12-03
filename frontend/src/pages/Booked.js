@@ -56,7 +56,6 @@ export default function Booked() {
             <h1 style={{ margin: 0 }}>BOOKED</h1>
             <p style={{ margin: '6px 0 0', color: '#666' }}>Your confirmed appointment</p>
           </div>
-          <button onClick={() => navigate('/dashboard')} style={{ border: 'none', background: 'transparent', fontSize: 20 }}>🏠</button>
         </header>
 
         <main style={{ display: 'grid', gridTemplateColumns: '280px 1fr 220px', gap: 20, marginTop: 20 }}>

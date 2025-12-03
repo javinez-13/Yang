@@ -53,6 +53,11 @@ export class AdminService {
     return this.logRepo.fetchAll(limit);
   }
 
+  async clearLogs() {
+    await this.logRepo.clearAll();
+    return true;
+  }
+
   // Organizational Chart Management
   async listOrgUnits() {
     return this.orgUnitRepo.findAll();

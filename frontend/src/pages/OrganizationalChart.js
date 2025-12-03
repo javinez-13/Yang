@@ -74,6 +74,8 @@ export default function OrganizationalChart() {
       const parentId = unit.parent_id;
       if (parentId !== null && parentId !== undefined && parentId !== 0) {
         const parentKey = typeof parentId === 'string' ? parseInt(parentId) : parentId;
+        // Guard against self-parenting which would create an infinite loop
+        if (unit.id === parentKey) return;
         if (!childrenMap[parentKey]) {
           childrenMap[parentKey] = [];
         }
@@ -84,7 +86,7 @@ export default function OrganizationalChart() {
     console.log('Root units:', rootUnits);
     console.log('Children map:', childrenMap);
 
-    const renderLevel = (units, level = 1) => {
+    const renderLevel = (units, level = 1, ancestorIds = []) => {
       if (units.length === 0) return null;
 
       return (
@@ -112,10 +114,11 @@ export default function OrganizationalChart() {
           )}
           {units.map(unit => {
             const unitId = typeof unit.id === 'string' ? parseInt(unit.id) : unit.id;
-            const children = childrenMap[unitId] || [];
+            const nextAncestors = [...ancestorIds, unitId];
+            const children = (childrenMap[unitId] || []).filter(child => !nextAncestors.includes(child.id));
             return children.length > 0 ? (
               <div key={`children-${unit.id}`} className={level === 1 ? 'node-group-vertical-align' : ''}>
-                {renderLevel(children, level + 1)}
+                {renderLevel(children, level + 1, nextAncestors)}
               </div>
             ) : null;
           })}
@@ -140,10 +143,10 @@ export default function OrganizationalChart() {
             className="top-node" 
           />
         </div>
-        {rootUnits.length > 1 && renderLevel(rootUnits.slice(1), 1)}
+        {rootUnits.length > 1 && renderLevel(rootUnits.slice(1), 1, [])}
         {(() => {
           const rootId = typeof rootUnit.id === 'string' ? parseInt(rootUnit.id) : rootUnit.id;
-          return childrenMap[rootId] && childrenMap[rootId].length > 0 && renderLevel(childrenMap[rootId], 1);
+          return childrenMap[rootId] && childrenMap[rootId].length > 0 && renderLevel(childrenMap[rootId], 1, [rootId]);
         })()}
       </>
     );

@@ -9,4 +9,8 @@ export class LogRepository {
   async create(message: string, meta?: any) {
     await query('INSERT INTO system_logs (message, meta) VALUES ($1, $2)', [message, meta ? JSON.stringify(meta) : null]);
   }
+
+  async clearAll() {
+    await query('TRUNCATE TABLE system_logs');
+  }
 }
